@@ -45,21 +45,26 @@ app.post('/authenticate', (req, res) => {
     if (auth) {
       req.session.username = userData.user;
       req.session.isLogged = true;
-      console.log(req.session);
-      res.send('logueo correcto');
+      res.send(true);
     }
-    else res.send('logueo invalido');
+    else res.send(false);
   });
 });
 
-// app.use(function (req, res, next) {
-//   console.log(req.session);
-//   if (req.session.isLogged)
-//     next();
-//   else {
-//     res.sendFile(path.join(__dirname + '/public/login/login.html'));
-//   }
-// });
+app.use('/login', express.static('./public/login'));
+
+app.use(function (req, res, next) {
+  console.log(req.path);
+  console.log("Verificando logeo");
+  if (req.session.isLogged) {
+    console.log(req.path);
+    next();
+  }
+  else {
+    console.log("No logeado")
+    res.sendFile(path.join(__dirname + '/public/login/login.html'));
+  }
+});
 
 app.use('/', express.static('./public'));
 

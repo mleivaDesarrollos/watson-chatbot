@@ -1,12 +1,12 @@
 @font-face {
     font-family: centuryGothic;
-    src: url(../fonts/GOTHIC.TTF);
+    src: url(GOTHIC.TTF);
 }
 
 body {
     height: 100vh !important;
     width: 100vw !important;
-    background-image: url(../img/Recurso1.png);
+    background-image: url(Recurso1.png);
     background-position: center center;
     background-size: cover;
     background-repeat: no-repeat;
@@ -14,6 +14,7 @@ body {
 }
 
 #wrapper-container1 {
+    max-width: 500px;
     margin-top: 5em;
 }
 
@@ -21,6 +22,12 @@ body {
     font-family: centuryGothic, Calibri !important;
     color: white;
     font-size: 1.5em;
+}
+#error-form {
+    font-family: centuryGothic, Calibri !important;
+    color: white;
+    font-size: 1em;
+    display: none;
 }
 
 #logo-mega {
@@ -36,7 +43,9 @@ body {
 .form-group {
     margin-top: 0px !important;
 }
-
+input:focus {
+    border-color: red !important;
+}
 input, textarea {
     margin: 0 0 0px 0;
     padding: 12px 5%;
@@ -63,7 +72,6 @@ input[type="checkbox"] {
     background-color: transparent;
     box-shadow: none;
 }
-
 .btn {
     overflow: hidden;
     margin-top: 10px;
