@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Page Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+    <!-- STYLESHEETS (BS & Custom)-->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" media="screen" href="login.css">
+
+</head>
+
+<body>
+    <div class="container text-center" id="wrapper-container1">
+        <img class="img-fluid" id="logo-mega" src="../img/Logo.png">
+        <div class="row justify-content-center">
+            <p class="text-center" id="texto-welcome">Portal de acceso a Sistemas<br>Megatech</p>
+        </div>
+
+
+        <div class="form-group">
+            <label for="usuario" data-icon="u"></label>
+            <input runat="server" id="usuario" name="iptUsername" type="text" placeholder="Mi usuario de Mega" value=""
+                required />
+        </div>
+        <div class="form-group">
+            <label for="password" data-icon="p"></label>
+            <input runat="server" id="password" name="iptPassword" placeholder="Contraseña" type="password" value="" required />
+        </div>
+        <div class="form-group form-check float-left">
+            <input type="checkbox" value="1" name="group[4457][1]" id="group-1">
+            <label for="group-1">No cerrar sesión</label>
+        </div>
+        <button type="submit" id="btnSend" class="btn btn-primary">INGRESAR</button>
+
+        <p>
+            <asp:Label runat="server" ID="LblError"></asp:Label>
+        </p>
+        <p><label runat="server" style="font-family: calibri; color: #FFFFFF;" id="servername"></label></p>
+
+
+    </div>
+
+    <script>
+        var exito = function (respuesta) {
+            document.body.innerHTML += respuesta;
+        }
+
+        // Llamado asíncrono a cualquier función requerida
+        var AjaxCall = function ({ url, method, callback, data } = {}) {
+            let xhr = new XMLHttpRequest();
+            xhr.open(method, url);
+            xhr.addEventListener('load', () => {
+                if (xhr.status == 200) {
+                    callback(xhr.response);
+                }
+            });
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.send(JSON.stringify(data));
+        }
+        var btnSend = document.querySelector('#btnSend');
+        btnSend.addEventListener('click', e => {
+            e.preventDefault();
+            var iptUsername = document.querySelector('input[name="iptUsername"]');
+            var username = iptUsername.value;
+
+            var iptPassword = document.querySelector('input[name="iptPassword"]');
+            var password = iptPassword.value;
+
+            var userData = {
+                user: username,
+                pass: password
+            }
+            console.log(userData);
+            AjaxCall({ url: "/authenticate", method: 'post', callback: exito, data: userData });
+
+        })
+    </script>
+
+    <!-- JAVASCRIPT -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+        crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+        crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+        crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/jam-icons@2.0.0/js/jam.min.js"></script>
+</body>
+
+</html>

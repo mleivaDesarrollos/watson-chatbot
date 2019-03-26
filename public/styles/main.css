@@ -1,0 +1,102 @@
+@font-face {
+    font-family: nuevoPortal;
+    src: url(../fonts/NUEVOPORTAL.ttf);
+  }
+
+@font-face {
+    font-family: Gothics;
+    src: url(../fonts/GOTHICB.TTF)
+}
+html {
+    font-family: 'Roboto';
+    font-weight: 400;
+}
+
+body {    
+    max-width: 100vw !important;
+    height: 100% !important;
+    background-image: url('../img/Recurso1.png');
+    background-attachment: fixed;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+.portal-accesos{
+    font-weight: 100;
+    color:white;
+}
+
+.portal-accesos:hover{
+    font-weight: 200;
+    color:black;    
+}
+
+a, a:hover, a:focus, a:active {
+    text-decoration: none;
+}
+
+.icono-acceso {
+    padding: 20px;
+    border-radius:60px;
+    font-family: nuevoPortal !important;
+    color: rgba(255, 255, 255, 1);  
+    font-size: 5em;
+}
+
+
+
+.icono-acceso:hover {
+    transition: 500ms;
+    color: #c8591d;
+    border-radius: 60px;
+    background-color: white;
+    border:2px;
+}
+
+.wrapper-span {
+    margin-bottom: 10px !important;
+}
+
+.wrapper-accesos{
+    margin-top:50px;
+}
+
+.container-fluid{
+    padding-left: 0px !important;
+}
+
+#nav-logeo {
+    padding: 5px 30px 5px 30px;
+    border: 1px solid #c8591d;
+    border-radius: 25px;
+    background-color: #c8591d;
+}
+#btnDeslogear {
+    text-decoration: none;
+    color: white;
+}
+
+.title-accesos {
+    font-size: 2em;
+    color: white;
+}
+
+.wrapper-aplicacion {
+    vertical-align: middle !important;
+}
+
+.texto-acceso {
+    color: white;
+}
+
+.fila-accesos {
+    margin-top: 20px;
+}
+
+.jumbotron {
+    margin-top: 1rem !important;
+    padding-bottom: 1rem !important;
+    padding-top: 1rem !important;
+    margin-bottom: 1rem !important;
+}
