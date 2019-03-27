@@ -40,7 +40,7 @@
         </div>
         <button type="submit" id="btnSend" class="btn btn-primary">INGRESAR</button>
 
-        <p class="text-center" id="error-form">Error en tus credenciales. Inténtalo nuevamente</p>
+        <p class="text-center error-hidden" id="error-form">Error en tus credenciales. Inténtalo nuevamente</p>
     </div>
 
     <script>
@@ -54,9 +54,12 @@
                     if (xhr.response == "true" || xhr.response == true) {
                         window.location = '/';
                     } else {
-                        /*document.getElementsByClassName('input-logeo')
-                        $('.input-logeo').val("");*/
-                        //$("#error-form").animate({ opacity: 0.2 }, 1000, 'linear').animate({ opacity: 1 }, 1000, 'linear');
+                        var arrayInputs = document.querySelectorAll('input');
+                        for (let i = 0; i < arrayInputs.length; i++) {
+                            arrayInputs[i].value = "";
+                        }
+                        document.querySelector('#error-form').classList.remove('error-hidden');
+                        document.querySelector('#error-form').classList.add('pulsate');
                     }
                 }
             });

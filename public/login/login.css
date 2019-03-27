@@ -23,11 +23,33 @@ body {
     color: white;
     font-size: 1.5em;
 }
-#error-form {
+.error-hidden {
     font-family: centuryGothic, Calibri !important;
     color: white;
     font-size: 1em;
     display: none;
+}
+.pulsate {
+    font-family: centuryGothic, Calibri !important;
+    color: white;
+    font-size: 1em;
+    display: block;
+    -webkit-animation: pulsate 3s infinite ease-out;
+    -moz-animation: pulsate 3s infinite ease-out;
+    -o-animation: pulsate 3s infinite ease-out;
+    animation: pulsate 3s infinite ease-out;
+    opacity: 0.5;
+}
+@keyframes pulsate {
+    0% { 
+        opacity: 0.5;
+    }
+    50% { 
+        opacity: 1.0;
+    }
+    100% { 
+        opacity: 0.5;
+    }
 }
 
 #logo-mega {
@@ -92,6 +114,12 @@ input[type="checkbox"] {
 .btn:hover {
     transition: 500ms !important;   
     background-color: #000000 !important;
+}
+.btn:active, .btn:focus {
+    border: 1px solid #c8591d !important;
+    box-shadow: none;
+    /* box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px rgba(126, 239, 104, 0.6); */
+    outline: 0 none;
 }
 
 label {
