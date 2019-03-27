@@ -1,6 +1,4 @@
-﻿//"Tu vieja en tanga", dijo Bruno Antonellini
-
-'use strict';
+﻿'use strict';
 // Cargamos la libreria express
 var express = require('express');
 // Instanciamos express en una variable
