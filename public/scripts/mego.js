@@ -2,6 +2,9 @@
   // Constante que almacena el contexto
   const CONTEXT_INPUT_TYPE = "hidden";
   const CONTEXT_INPUT_NAME = "inpContext";
+  // Direccion hacia donde se apunta el servicio de bot
+  const CHATBOT_URL = '/send';
+  const CHATBOT_HTTPMETHOD = 'post';
   
   var chatMego = document.createElement('div');
   chatMego.className = "chat-mego";
@@ -102,6 +105,7 @@
   // Llamado asíncrono a cualquier función requerida
   var AjaxCall = function({url, method, callback, data, json} = {}){
       let xhr = new XMLHttpRequest();
+      console.log(method + " " + url);
       xhr.open(method, url);
       xhr.addEventListener('load', () => {
           if(xhr.status == 200){
@@ -150,7 +154,7 @@
       // Guardamos el contexto en el documento
       var inpContext = document.querySelector(CONTEXT_DATA);
       // Si no existe el hidden de la etiqueta se genera
-      if(inpContext == undefined) {
+      if(inpContext == undefined && JsonResp.context != undefined) {
           // Generamos un elemento
           inpContext = document.createElement('input')
           // Definimos los parametros del elemento
@@ -159,8 +163,7 @@
           // Anexamos el elemento al body
           document.body.appendChild(inpContext);
       }
-      // Guardamos el valor del contexto convirtiendolo en string
-      inpContext.value = JSON.stringify(JsonResp.context);
+      if(inpContext != undefined) inpContext.value = JSON.stringify(JsonResp.context);
       loader.classList.remove("active");
   }
 
@@ -192,11 +195,11 @@
       // Configuramos el focus sobre el input
       iptMessage.focus();
       // Preparamos la solicitud ajax para hacer el envío de información
-      AjaxCall({url:'http://portal.megatech.la:2030/send', method:'post', callback: RenderResponse, data: info, json: true});
+      AjaxCall({url:CHATBOT_URL, method: CHATBOT_HTTPMETHOD, callback: RenderResponse, data: info, json: true});
   };
 
   var startConversation = function(){
-    AjaxCall({url:'http://portal.megatech.la:2030/send', method:'post', callback: RenderResponseMessage, data: {msg: ""}, json: true});
+    AjaxCall({url:CHATBOT_URL, method: CHATBOT_HTTPMETHOD, callback: RenderResponseMessage, data: {msg: ""}, json: true});
   }
 
   var click_submit = function (e) {
@@ -219,7 +222,7 @@
       }
       setTimeout(() => {
           // Preparamos la solicitud ajax para hacer el envío de información
-          AjaxCall({ url: 'http://portal.megatech.la:2030/send', method: 'post', callback: RenderResponseMessage, data: info, json: true });
+          AjaxCall({ url: CHATBOT_URL, method: CHATBOT_HTTPMETHOD, callback: RenderResponseMessage, data: info, json: true });
       }, 1400);
       // Generamos mensaje del usuario
       generate_message(_msg, 'usuario');
