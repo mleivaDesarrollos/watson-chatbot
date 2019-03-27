@@ -1,8 +1,4 @@
 ﻿'use strict';
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/chatbot-modularization
 // Cargamos la libreria express
 var express = require('express');
 // Instanciamos express en una variable
