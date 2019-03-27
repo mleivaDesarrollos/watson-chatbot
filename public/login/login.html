@@ -34,16 +34,26 @@
             <input class="input-logeo" runat="server" id="password" name="iptPassword" placeholder="Contraseña"
                 type="password" value="" required />
         </div>
-        <div class="form-group form-check float-left">
+        <!-- <div class="form-group form-check float-left">
             <input type="checkbox" value="1" name="group[4457][1]" id="group-1">
             <label for="group-1">No cerrar sesión</label>
-        </div>
+        </div> -->
         <button type="submit" id="btnSend" class="btn btn-primary">INGRESAR</button>
 
         <p class="text-center error-hidden" id="error-form">Error en tus credenciales. Inténtalo nuevamente</p>
     </div>
 
     <script>
+        document.addEventListener("keyup", function (event) {
+            // Number 13 is the "Enter" key on the keyboard
+            if (event.keyCode === 13) {
+                // Cancel the default action, if needed
+                event.preventDefault();
+                // Trigger the button element with a click
+                document.getElementById("btnSend").click();
+            }
+        });
+
         // Llamado asíncrono a cualquier función requerida
         var AjaxCall = function ({ url, method, callback, data } = {}) {
             let xhr = new XMLHttpRequest();
@@ -53,8 +63,8 @@
                     console.log(xhr.response);
                     if (xhr.response == "true" || xhr.response == true) {
                         window.location = '/';
-                    } else {
-                        var arrayInputs = document.querySelectorAll('input');
+                    } else {                
+                        arrayInputs = document.querySelectorAll('input');
                         for (let i = 0; i < arrayInputs.length; i++) {
                             arrayInputs[i].value = "";
                         }
