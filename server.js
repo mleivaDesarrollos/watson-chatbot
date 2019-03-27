@@ -1,6 +1,4 @@
-﻿// tu Vieja en tanga
-
-'use strict';
+﻿'use strict';
 
 // Cargamos la libreria express
 var express = require('express');
