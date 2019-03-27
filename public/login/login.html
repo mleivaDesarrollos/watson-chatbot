@@ -35,7 +35,7 @@
                 type="password" value="" required />
         </div>
         <div class="form-group form-check float-left">
-            <input type="checkbox" value="1" name="group[4457][1]" id="group-1">
+            <input type="checkbox" name="iptStayLogged">
             <label for="group-1">No cerrar sesión</label>
         </div>
         <button type="submit" id="btnSend" class="btn btn-primary">INGRESAR</button>
@@ -59,7 +59,6 @@
             xhr.open(method, url);
             xhr.addEventListener('load', () => {
                 if (xhr.status == 200) {
-                    console.log(xhr.response);
                     if (xhr.response == "true" || xhr.response == true) {
                         window.location = '/';
                     } else {                
@@ -84,11 +83,14 @@
             var iptPassword = document.querySelector('input[name="iptPassword"]');
             var password = iptPassword.value;
 
+            var iptStayLogged = document.querySelector('input[name="iptStayLogged"');
+            var stayLogged = iptStayLogged.checked;
+
             var userData = {
                 user: username,
-                pass: password
+                pass: password,
+                stay: stayLogged,
             }
-            console.log(userData);
             AjaxCall({ url: "/authenticate", method: 'post', callback: undefined, data: userData });
 
         })

@@ -1,6 +1,4 @@
-﻿//"Tu vieja en tanga", dijo Bruno Antonellini
-
-'use strict';
+﻿'use strict';
 // Cargamos la libreria express
 var express = require('express');
 // Instanciamos express en una variable
@@ -40,6 +38,7 @@ app.use(session({ secret: 'codigo secreto', resave: false, saveUninitialized: fa
 app.post('/authenticate', (req, res) => {
   var adMega = new ad(configAD);
   var userData = req.body;
+  console.log(userData); // USR, PSW, STY
   adMega.authenticate(userData.user + '@mega.com.ar', userData.pass, function (err, auth) {
     if (auth) {
       adMega.find('(&(sAMAccountName=' + userData.user + '))', function(err, results) {
@@ -48,12 +47,19 @@ app.post('/authenticate', (req, res) => {
         req.session.username = userData.user;
         req.session.firstname = firstName;
         req.session.isLogged = true;
+        nombreUsuario = req.session.firstName;
+        // Si checkbox==false --> vida de la cookie = 1hs
+        if (userData.stay == false) {
+          req.session.cookie.maxAge = 3600000; // milisegundos
+        }
+
         res.send(true);
       });
     }
     else res.send(false);
   });
 });
+
 
 app.use('/login', express.static('./public/login'));
 

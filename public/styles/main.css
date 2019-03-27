@@ -32,6 +32,10 @@ body {
     color:black;    
 }
 
+
+
+
+
 a, a:hover, a:focus, a:active {
     text-decoration: none;
 }
@@ -99,4 +103,27 @@ a, a:hover, a:focus, a:active {
     padding-bottom: 1rem !important;
     padding-top: 1rem !important;
     margin-bottom: 1rem !important;
+}
+#wrapper-saludo {
+    background-color: rgba(0, 0, 0, 0.3);
+    margin-top:1px;
+    font-size: 25px;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+    max-height: 70px;
+    
+}
+#wrapper-texto {
+    align-items: center  !important;
+    padding-top: 15px;
+}
+.saludo{
+    font-size: 1.25em;
+    display: inline-block !important;
+    padding-right: 5px;    
+    margin-bottom: 0px !important;
+}
+#logout-img {
+    display: inline-block !important;
+    max-width: 30px;
 }
