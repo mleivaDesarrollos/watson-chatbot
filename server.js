@@ -1,6 +1,4 @@
-﻿// Prueba de subida a bitbucket asd
-
-'use strict';
+﻿'use strict';
 // Cargamos la libreria express
 var express = require('express');
 // Instanciamos express en una variable
