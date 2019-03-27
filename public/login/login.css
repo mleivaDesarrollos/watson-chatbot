@@ -43,8 +43,11 @@ body {
 .form-group {
     margin-top: 0px !important;
 }
-input:focus {
-    border-color: red !important;
+.input-logeo:focus {
+    border: 1px solid #c8591d !important;
+    box-shadow: none;
+    /* box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px rgba(126, 239, 104, 0.6); */
+    outline: 0 none;
 }
 input, textarea {
     margin: 0 0 0px 0;
