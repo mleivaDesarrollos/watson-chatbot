@@ -111,7 +111,7 @@
     imagenes[1] = "img/2.png";
   });
 
-  // console.log(chatInput);
+   console.log(chatInput);
 
   onload = function(){
       intervalPestaneo();
