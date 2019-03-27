@@ -1,4 +1,6 @@
-﻿'use strict';
+﻿//"Tu vieja en tanga", dijo Maximiliano Leiva
+
+'use strict';
 // Cargamos la libreria express
 var express = require('express');
 // Instanciamos express en una variable
