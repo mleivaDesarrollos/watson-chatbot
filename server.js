@@ -1,4 +1,4 @@
-﻿//"Tu vieja en tanga", dijo Maximiliano Leiva
+﻿//"Tu vieja en tanga", dijo Bruno Antonellini
 
 'use strict';
 // Cargamos la libreria express
