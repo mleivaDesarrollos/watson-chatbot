@@ -46,8 +46,7 @@ app.post('/authenticate', (req, res) => {
         var firstName = results.users[0].givenName.split(" ")[0];   
         req.session.username = userData.user;
         req.session.firstname = firstName;
-        req.session.isLogged = true;
-        nombreUsuario = req.session.firstName;
+        req.session.isLogged = true;        
         // Si checkbox==false --> vida de la cookie = 1hs
         if (userData.stay == false) {
           req.session.cookie.maxAge = 3600000; // milisegundos
