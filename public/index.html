@@ -31,8 +31,8 @@
                 <div class="col-sm-4 text-center" id="wrapper-saludo">
                     <div id="wrapper-texto">
                         <h1 class="text-light font-weight-lighter saludo align-middle">Hola
-                            <strong>Maximiliano</strong>!</h1>
-                        <img class="img-fluid align-middle" src="img/logout.png" id="logout-img">
+                        </h1>
+                        <a href="/logout"><img class="img-fluid align-middle" src="img/logout.png" id="logout-img"></a>
                     </div>
                 </div>
 
@@ -139,16 +139,28 @@
         </div>
     </div>
 
-    <script>
-        localStorage.setItem('Username', 'HOLA');
-    </script>
-
-
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
     <script src="scripts/mego.js"></script>
 
+    <script>
+        // Función para separar los valores de la COOKIE y obtener el valor de la propiedad NAME 
+        function getCookie(name) {
+            var value = "; " + document.cookie;
+            var parts = value.split("; " + name + "=");
+            if (parts.length == 2) return parts.pop().split(";").shift();
+        }
+        function delete_cookie(name) {
+            document.cookie = name + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        }
+        var nombreUsuario = getCookie('nombreUsuario');
+
+        var tagSTRONG = document.createElement('strong');
+        tagSTRONG.innerHTML = nombreUsuario + '!';
+        //var contenidoSTRONG = document.createTextNode(nombreUsuario);
+        document.querySelector('.saludo').appendChild(tagSTRONG);
+    </script>
 
 </body>
 

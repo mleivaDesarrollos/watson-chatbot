@@ -46,7 +46,8 @@ app.post('/authenticate', (req, res) => {
         var firstName = results.users[0].givenName.split(" ")[0];   
         req.session.username = userData.user;
         req.session.firstname = firstName;
-        req.session.isLogged = true;        
+        req.session.isLogged = true;  
+        res.cookie('nombreUsuario', req.session.firstname);
         // Si checkbox==false --> vida de la cookie = 1hs
         if (userData.stay == false) {
           req.session.cookie.maxAge = 3600000; // milisegundos
@@ -57,6 +58,12 @@ app.post('/authenticate', (req, res) => {
     }
     else res.send(false);
   });
+});
+
+// GET LOGOUT
+app.get('/logout', (req, res, next) => {
+  req.session.destroy();
+  res.redirect(req.get('referer'));
 });
 
 
