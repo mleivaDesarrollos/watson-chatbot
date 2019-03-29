@@ -7,7 +7,7 @@ body {
     height: 100vh !important;
     width: 100vw !important;
     background-image: url(Recurso1.png);
-    background-position: center center;
+    background-position: fixed;
     background-size: cover;
     background-repeat: no-repeat;
     overflow: hidden !important;
