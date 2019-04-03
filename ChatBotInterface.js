@@ -5,7 +5,7 @@ var AssistantIBMWatson = require('watson-developer-cloud/assistant/v1');
 const chatbotAPI_username = 'apikey';
 const chatbotAPI_password = 'KK4yC9kafKiF9Qbg4dFOTNU5gN0iXIBMHvHZ2om8lj1R';
 const chatbotAPI_version = '2018-02-16';
-const chatbotAPI_workspaceid = '1dd2c8ac-ab45-4e0c-bc01-0e231c01a703';
+const chatbotAPI_workspaceid = '0c062f85-3d22-49d4-8e53-6ccc625f7f43';
 
 const predefinedWelcomeMessage = [
     "Bienvenido, mi nombre es Mego, ¿En qué te ayudo, $u?",
