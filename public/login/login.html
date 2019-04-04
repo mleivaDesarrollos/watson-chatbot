@@ -42,60 +42,6 @@
 
         <p class="text-center error-hidden" id="error-form">Error en tus credenciales. Inténtalo nuevamente</p>
     </div>
-    <script>
-        document.addEventListener("keyup", function (event) {
-            // Number 13 is the "Enter" key on the keyboard
-            if (event.keyCode === 13) {
-                // Cancel the default action, if needed
-                event.preventDefault();
-                // Trigger the button element with a click
-                document.getElementById("btnSend").click();
-            }
-        });
-
-        // Llamado asíncrono a cualquier función requerida
-        var AjaxCall = function ({ url, method, callback, data } = {}) {
-            let xhr = new XMLHttpRequest();
-            xhr.open(method, url);
-            xhr.addEventListener('load', () => {
-                if (xhr.status == 200) {
-                    if (xhr.response == "true" || xhr.response == true) {
-                        window.location = '/';
-                    } else {                
-                        arrayInputs = document.querySelectorAll('input');
-                        for (let i = 0; i < arrayInputs.length; i++) {
-                            arrayInputs[i].value = "";
-                        }
-                        document.querySelector('#error-form').classList.remove('error-hidden');
-                        document.querySelector('#error-form').classList.add('pulsate');
-                    }
-                }
-            });
-            xhr.setRequestHeader('Content-Type', 'application/json');
-            xhr.send(JSON.stringify(data));
-        }
-        var btnSend = document.querySelector('#btnSend');
-        btnSend.addEventListener('click', e => {
-            e.preventDefault();
-            var iptUsername = document.querySelector('input[name="iptUsername"]');
-            var username = iptUsername.value;
-
-            var iptPassword = document.querySelector('input[name="iptPassword"]');
-            var password = iptPassword.value;
-
-            var iptStayLogged = document.querySelector('input[name="iptStayLogged"');
-            var stayLogged = iptStayLogged.checked;
-
-            var userData = {
-                user: username,
-                pass: password,
-                stay: stayLogged,
-            }
-            AjaxCall({ url: "/authenticate", method: 'post', callback: undefined, data: userData });
-
-        })
-    </script>
-
 
     <!-- JAVASCRIPT -->
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
@@ -108,7 +54,7 @@
         integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
         crossorigin="anonymous"></script>
     <script src="https://unpkg.com/jam-icons@2.0.0/js/jam.min.js"></script>
-
+    <script src="/login/js/login.js"></script>
 </body>
 
 </html>
