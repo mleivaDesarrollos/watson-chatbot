@@ -3,9 +3,9 @@ var AssistantIBMWatson = require('watson-developer-cloud/assistant/v1');
 
 // Datos de credenciales de conexión. Actualmente el proveedor de servicio es IBM Cloud
 const chatbotAPI_username = 'apikey';
-const chatbotAPI_password = 'KK4yC9kafKiF9Qbg4dFOTNU5gN0iXIBMHvHZ2om8lj1R';
+const chatbotAPI_password = '7dBb_5eahnse1zvJtVVgo0Ozcz3M_A3YpZJwbL-Sqem8';
 const chatbotAPI_version = '2018-02-16';
-const chatbotAPI_workspaceid = '0c062f85-3d22-49d4-8e53-6ccc625f7f43';//asd
+const chatbotAPI_workspaceid = '70e44047-c5cd-461a-aca6-78b843e514e5';
 
 const predefinedWelcomeMessage = [
     "Bienvenido, mi nombre es Mego, ¿En qué te ayudo, $u?",
