@@ -32,8 +32,6 @@
     var secondStyle = document.createElement("style");
     secondStyle.innerHTML = CSSSecond;
 
-    
-
     var generate_chat = function () {
 
         var str = "";
