@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1080, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Prueba de Watson con nueva integración</title>
+    <style>
+        .bot_response{
+            color: brown;
+        }
+        .user_response{
+            color: blue;
+        }
+        .message-container{
+            width: 50%;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <label><input type="text" name="iptMessageFromUser" placeholder="Ingrese mensaje..."></label> <button type="button" id="btnEnviar">Enviar</button>
+    <div class="message-container">
+        <ul class="message-list">
+        
+        </ul>
+    </div>
+    <script>
+        var ajaxCall = function(url, method, callback, data, json){
+            var xhr = new XMLHttpRequest();
+            xhr.open(method, url);
+            // Si el objeto es de tipo json
+            if(json == true){
+                xhr.setRequestHeader('Content-Type', 'application/json');
+            }
+            xhr.addEventListener('load', () => {
+                if(xhr.status == 200){
+                    callback(xhr.response);
+                }
+            })
+            xhr.send(data);
+        }
+
+        var send_message_node_api = function(option_message){
+            var messageFromUser;            
+            if(option_message == undefined){                
+                // Levantamos el input
+                var iptUserMessage = document.querySelector("input[name='iptMessageFromUser']");
+                // Levantamos el valor del mensaje
+                messageFromUser = iptUserMessage.value;
+            } else {
+                messageFromUser = option_message;
+            }
+            // Vaciamos el contenido
+            messageFromUser.value = "";
+            // Agregamos el mensaje al acumulador de mensajes
+            var ulMessages = document.querySelector(".message-list");
+            // Creamos una elemento li para sumarlo
+            var li_usermessage = document.createElement("li");
+            // Asignamos la clase mensaje
+            li_usermessage.classList.add("user_response");
+            li_usermessage.innerHTML = messageFromUser;
+            // Agregamos el elemento al UL
+            ulMessages.appendChild(li_usermessage);
+            // Disponemos los datos a enviar
+            var body = {
+                message: messageFromUser
+            }
+            // Convertimos el body en string
+            body = JSON.stringify(body);
+            // Enviamos la petición por ajax
+            ajaxCall('/send', 'post', renderResponse, body, true);
+        }
+
+        var renderResponse = function(response){
+            // Levantamos el listado
+            var ul_messages = document.querySelector(".message-list");
+            // Generamos un nuevo elemento de tipo li
+            var li_botmessage = document.createElement("li");
+            // Parseamos el elemento JSON
+            var json = JSON.parse(response);
+            // Iteramos sobre todos los mensajes recibidos
+            json.messages.forEach(message => {                
+                // Establecemos las propiedades
+                li_botmessage.classList.add("bot_response");                
+                // Agregamos el mensaje de respuesta al acumulador de mensajes         
+                li_botmessage.innerHTML = message.text;
+                ul_messages.appendChild(li_botmessage);       
+                if(message.type == "option"){
+                    // Mostramos las opciones que viajaron con el mensaje
+                    message.options.forEach(option => {
+                       // Por cada elemento vamos a renderizar una etiqueta a a modo de prueba
+                       var optionResponse = document.createElement("a");
+                       // Subscribimos el evento click de este nuevo elemento
+                       optionResponse.addEventListener("click", e => { 
+                           // Prevenimos la accion por defecto
+                            e.preventDefault();
+                            // Mandamos el mensaje de respuesta
+                            send_message_node_api(option.value)
+                       });
+                       // Indicamos el contenido el mensaje
+                       optionResponse.innerHTML = option.description + " <br>";
+                       // Anexamos el mensaje al listado
+                       ul_messages.appendChild(optionResponse);
+                    });                    
+                }
+                
+            });
+        }
+        var btnEnviar = document.querySelector("#btnEnviar");
+        btnEnviar.addEventListener('click', e => {
+            e.preventDefault();
+            // Llamamos a la funcion para enviar mensajes
+            send_message_node_api();
+        });
+
+        // Levantamos el input de mensaje
+        var iptUserMessage = document.querySelector("input[name='iptMessageFromUser']");
+        // Anexamos el evento keyup
+        iptUserMessage.addEventListener("keyup", e => {
+            if(e.keyCode == 13) {
+                // Detenemos por defecto
+                e.preventDefault();
+                // Realizmos un click
+                btnEnviar.click();
+            }
+        });
+
+    </script>
+</body>
+</html>
