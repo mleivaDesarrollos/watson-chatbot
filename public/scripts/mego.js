@@ -162,24 +162,14 @@
         // Iteramos sobre todos los mensajes recibidos
         JsonResp.messages.forEach(message => { 
             // Generamos el mensaje
-            generate_message(message.text, "bot");
-                
-            if(message.type == "option"){                    
-                // Validamos si el mensaje viene con descripción
-                if(message.description != undefined){
-                    // Mostramos la etiqueta con strong
-                    generate_message("<strong>" + message.description + "</strong>" );
-                }
-                var li_elements;
-                // Mostramos las opciones que viajaron con el mensaje
-                message.options.forEach(option => {
-                    // Por motivos de muestro, generamos la opcion y la mostramos por LI
-                    let li_option = "<li>"+ option.description + "</li><br>";
-                    li_elements += li_option;
-                }); 
-                // generamos el mensaje
-                generate_message(li_elements, "bot");
-            }                
+            switch(message.type){
+                case "text":
+                    generate_message(message.text, "bot");
+                    break;
+                case "option":
+                    generate_message(message, "option");
+                    break;
+            }
         });
         // Guardamos el contexto en el documento
         var inpContext = document.querySelector(CONTEXT_DATA);
@@ -214,10 +204,18 @@
 
     var click_submit = function (e) {
         e.preventDefault();
+        send_message_api();
+    }
 
-        var _msg = $("#chat-input").val();
-        if (_msg.trim() == '') {
-            return false;
+    var send_message_api = function(option_value){
+        var _msg;
+        if(option_value == undefined) {
+            _msg = $("#chat-input").val();
+            if (_msg.trim() == '') {
+                return false;
+            }
+        } else {
+            _msg = option_value;
         }
         // Validamos si existe el contexto
         let inpContext = document.querySelector(CONTEXT_DATA);
@@ -307,8 +305,11 @@
         var notificacion = "";
         str += "<div id='cm-msg-" + indice + "' class=\"chat-msg " + type + "\">";
         str += "<span class=\"msg-avatar\">";
+        // if(type == 'opcion'){
 
-        if (type != 'usuario') {
+        // }
+
+        if (type == 'bot') {            
             //Incrementamos las notificaciones que no sean de usuarios
             contadorN++;
             notificacion = "<span id='notification' class=\"badge badge-dark badge-custom\">" + contadorN + "<\/span>";
@@ -317,8 +318,32 @@
             $("#chat-submit").prop('disabled', false);
         }
         str += "<\/span>";
-        str += "<div class=\"cm-msg-text\">";
-        str += msg;
+        str += "<div class=\"cm-msg-text\">";        
+
+        if(type == "option"){
+            console.log(msg.text);
+            console.log(msg.description);
+            console.log(msg.options);
+            str += msg.text;
+            str += "<small><em>"+msg.description+"<em></em></em></small><em><em>";
+            str += "<ul>";
+            msg.options.forEach(option => {
+                var msg_li = document.createElement('li');
+                msg_li.setAttributeNS("onclick","send_message_api",option.value);
+            });
+            str+="</ul>";
+
+            /*
+                msg.text : Mensaje estandard
+                msg.description : Puede venir con esto, no es obligatorio, validar antes de representar
+                msg.options : array de opciones
+                option.value : Lo que se le mandaria a watson
+                option.description
+                    
+            */
+        } else {            
+            str += msg;
+        }
         str += "<\/div>";
         str += "<\/div>";
         $(".chat-logs").append(str);
