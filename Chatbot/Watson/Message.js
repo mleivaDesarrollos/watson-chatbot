@@ -51,9 +51,10 @@ module.exports = function({param_workspace, param_version, param_headers, param_
     // Almacenamos los elementos en sus correspondientes ubicaciones
     this._workspace = param_workspace;
     this._version = param_version;
-
+    this._headers = param_headers;
+    this._username = param_username;
     // Método que controla los mensajes
-    this.message = function({userInput, context} = {}){
+    this.message = function({userInput, context} = {}){        
         // Configuramos el URI para poder realizar las consultas a la API
         const URI = "https://gateway.watsonplatform.net/assistant/api/v1/workspaces/" + this._workspace + "/message?version=" + this._version;
         // Definimos método        
@@ -61,7 +62,7 @@ module.exports = function({param_workspace, param_version, param_headers, param_
         var promise = new Promise((resolve, reject) => {
             // Disponemos el método para obtener la información
             var getData = function(messageToConvert, context) {
-                let body = {
+                var body = {
                     input:{
                         text: messageToConvert
                     },
@@ -69,12 +70,12 @@ module.exports = function({param_workspace, param_version, param_headers, param_
                 };
                 // Devolvemos el string procesado y convertido a string
                 return JSON.stringify(body);
-            }            
+            }
             // Validamos si el mensaje viene vacio
-            if(userInput != ''){
+            if(userInput != '' && userInput != undefined){       
                 // Ejecutamos la petición de envío de mensajes
                 request({
-                    headers: param_headers,
+                    headers: this._headers,
                     uri: URI,
                     method: METHOD,
                     body: getData(userInput, context)
@@ -82,7 +83,7 @@ module.exports = function({param_workspace, param_version, param_headers, param_
                     // Validamos si la petición viene con errores
                     if(err){                        
                         return reject("Error: Se ha producido un error al enviar mensaje: " + err);                                    
-                    }                    
+                    }   
                     // Parseamos la respuesta
                     watsonResponse = JSON.parse(watsonResponse);                
                     // Si pasamos la fase de validación en primera instancia logueamos lo obtenido
@@ -104,7 +105,7 @@ module.exports = function({param_workspace, param_version, param_headers, param_
                         }
                     });
                     // Agregamos los mensajes filtrados y el contexto a la respuesta procesada
-                    processed_response.messages = arrMessages;
+                    processed_response.messages = arrMessages;                    
                     processed_response.context = context;
                     // Resolvemos la promise                
                     resolve(processed_response);
@@ -114,9 +115,9 @@ module.exports = function({param_workspace, param_version, param_headers, param_
                 // Generamos un saludo random                
                 var msg = predefined_welcome_message[Math.floor(Math.random() * predefined_welcome_message.length)];
                 // Cambiamos el placeholder de usuario por el nombre comunicado
-                // Validamos si el usuario vino cargado con la solicitud
-                if(param_username != undefined) {
-                    msg = msg.replace("$u", this.firstname);
+                // Validamos si el usuario vino cargado con la solicitud     
+                if(this._username != undefined) {
+                    msg = msg.replace("$u", this._username);
                 } else { // Si no vino cargado reemplazamos el comodin
                     msg = msg.replace(" $u", "");
                 }                
