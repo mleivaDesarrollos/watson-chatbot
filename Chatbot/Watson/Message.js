@@ -72,7 +72,6 @@ module.exports = function({param_workspace, param_version, param_headers, param_
             }            
             // Validamos si el mensaje viene vacio
             if(userInput != ''){
-                console.log(context);
                 // Ejecutamos la petición de envío de mensajes
                 request({
                     headers: param_headers,

@@ -86,8 +86,6 @@
         var renderResponse = function(response){
             // Levantamos el listado
             var ul_messages = document.querySelector(".message-list");
-            // Generamos un nuevo elemento de tipo li
-            var li_botmessage = document.createElement("li");
             // Parseamos el elemento JSON
             console.log(response);
             var json = JSON.parse(response);
@@ -108,13 +106,14 @@
                 // Guardamos el contexto obtenido en la etiqueta
                 iptContext.value = JSON.stringify(json.context);
             }
-            console.log(json.messages);
             // Iteramos sobre todos los mensajes recibidos
-            json.messages.forEach(message => {                
+            json.messages.forEach(message => { 
+                // Generamos un nuevo elemento de tipo li
+                var li_botmessage = document.createElement("li");
                 // Establecemos las propiedades
                 li_botmessage.classList.add("bot_response");                
                 // Agregamos el mensaje de respuesta al acumulador de mensajes         
-                li_botmessage.innerHTML = message.text;
+                li_botmessage.innerHTML = message.text;       
                 ul_messages.appendChild(li_botmessage);
                     
                 if(message.type == "option"){                    
