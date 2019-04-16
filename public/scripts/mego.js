@@ -159,7 +159,28 @@
         // Obtenemos el objeto JSON CSSSecond lo parseamos
         var JsonResp = JSON.parse(responseFromServer);
         // Renderizamos la respuesta del bot
-        generate_message(JsonResp.msg, 'bot');
+        // Iteramos sobre todos los mensajes recibidos
+        JsonResp.messages.forEach(message => { 
+            // Generamos el mensaje
+            generate_message(message.text, "bot");
+                
+            if(message.type == "option"){                    
+                // Validamos si el mensaje viene con descripción
+                if(message.description != undefined){
+                    // Mostramos la etiqueta con strong
+                    generate_message("<strong>" + message.description + "</strong>" );
+                }
+                var li_elements;
+                // Mostramos las opciones que viajaron con el mensaje
+                message.options.forEach(option => {
+                    // Por motivos de muestro, generamos la opcion y la mostramos por LI
+                    let li_option = "<li>"+ option.description + "</li><br>";
+                    li_elements += li_option;
+                }); 
+                // generamos el mensaje
+                generate_message(li_elements, "bot");
+            }                
+        });
         // Guardamos el contexto en el documento
         var inpContext = document.querySelector(CONTEXT_DATA);
         // Si no existe el hidden de la etiqueta se genera
@@ -206,7 +227,7 @@
         if (inpContext != undefined) contextValue = inpContext.value;
         // Preparamos los datos para enviar
         var info = {
-            msg: _msg,
+            message: _msg,
             context: contextValue
         }
         setTimeout(() => {

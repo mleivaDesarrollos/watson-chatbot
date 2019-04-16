@@ -67,16 +67,16 @@ app.get('/logout', (req, res, next) => {
 });
 
 
-app.use('/login', express.static('./public/login'));
+// app.use('/login', express.static('./public/login'));
 
-app.use(function (req, res, next) {
-  if (req.session.isLogged) {
-    next();
-  }
-  else {
-    res.sendFile(path.join(__dirname + '/public/login/login.html'));
-  }
-});
+// app.use(function (req, res, next) {
+//   if (req.session.isLogged) {
+//     next();
+//   }
+//   else {
+//     res.sendFile(path.join(__dirname + '/public/login/login.html'));
+//   }
+// });
 
 app.use('/', express.static('./public'));
 
@@ -92,11 +92,13 @@ app.post('/send', (req, res) => {
   let msgToSend = req.body;
   // Obtenemos el nombre del usuario sacado de la session
   let userFirstName = req.session.firstname;
-  var chatbotClass = require('./ChatBotInterface');
-    // Instanciamos la clase chatbot
-  var chatbot = new chatbotClass(userFirstName);
-    chatbot.SendMessageAndAwaitResponse(msgToSend).then((messageFromBot) => {
-      res.send(messageFromBot);
+  // Separamos menssaje
+  var message = msgToSend.message;
+  var context;
+  if(msgToSend.context != undefined) context = JSON.parse(msgToSend.context);
+  var chatbot = require('./Chatbot/WatsonIntegration');
+  chatbot.message({userInput: msgToSend.message, context: context, username: userFirstName}).then((messageFromBot) => {
+      res.json(messageFromBot);
   });
 })
 // Lanzamos la escucha sobre el puerto indicado

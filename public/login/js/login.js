@@ -48,7 +48,7 @@ var AjaxCall = function AjaxCall() {
       if (xhr.response == "true" || xhr.response == true) {
         window.location = '/';
       } else {
-        arrayInputs = document.querySelectorAll('input');
+        var arrayInputs = document.querySelectorAll('input');
 
         for (var i = 0; i < arrayInputs.length; i++) {
           arrayInputs[i].value = "";
