@@ -26,6 +26,9 @@
         </ul>
     </div>
     <script>
+        const HIDDEN_TAG_NAME = "context";
+        const HIDDEN_CONTEXT_TAG = "input[name='" + HIDDEN_TAG_NAME + "']";
+
         var ajaxCall = function(url, method, callback, data, json){
             var xhr = new XMLHttpRequest();
             xhr.open(method, url);
@@ -42,15 +45,20 @@
         }
 
         var send_message_node_api = function(option_message){
-            var messageFromUser;            
+            var messageFromUser;      
+            // Levantamos el input
+            var iptUserMessage = document.querySelector("input[name='iptMessageFromUser']");      
             if(option_message == undefined){                
-                // Levantamos el input
-                var iptUserMessage = document.querySelector("input[name='iptMessageFromUser']");
                 // Levantamos el valor del mensaje
                 messageFromUser = iptUserMessage.value;
             } else {
                 messageFromUser = option_message;
             }
+            // Levantamos el contexto almacenado en el documento
+            let iptContext =  document.querySelector(HIDDEN_CONTEXT_TAG);
+            let context;
+            // Validamos si ya esta cargado el contexto
+            if(iptContext != undefined) context = iptContext.value;
             // Vaciamos el contenido
             messageFromUser.value = "";
             // Agregamos el mensaje al acumulador de mensajes
@@ -64,10 +72,13 @@
             ulMessages.appendChild(li_usermessage);
             // Disponemos los datos a enviar
             var body = {
-                message: messageFromUser
+                message: messageFromUser,
+                context: context
             }
             // Convertimos el body en string
             body = JSON.stringify(body);
+            // Vaciamos el contenido del input
+            iptUserMessage.value = "";
             // Enviamos la petición por ajax
             ajaxCall('/send', 'post', renderResponse, body, true);
         }
@@ -78,15 +89,46 @@
             // Generamos un nuevo elemento de tipo li
             var li_botmessage = document.createElement("li");
             // Parseamos el elemento JSON
+            console.log(response);
             var json = JSON.parse(response);
+            // Validamos si el mensaje viene con contexto
+            if(json.context != undefined) {
+                // Levantamos el tag correspondiente al contexto
+                var iptContext = document.querySelector(HIDDEN_CONTEXT_TAG);
+                // Validamos si la etiqueta fue encontrada
+                if(iptContext == undefined) {
+                    // Creamos el elemento y lo anexamos
+                    iptContext = document.createElement("input");
+                    // Configuramos los parametros de valor
+                    iptContext.type = "hidden";
+                    iptContext.name = HIDDEN_TAG_NAME;
+                    // Anexamos la etiqueta
+                    document.body.appendChild(iptContext);
+                }
+                // Guardamos el contexto obtenido en la etiqueta
+                iptContext.value = JSON.stringify(json.context);
+            }
+            console.log(json.messages);
             // Iteramos sobre todos los mensajes recibidos
             json.messages.forEach(message => {                
                 // Establecemos las propiedades
                 li_botmessage.classList.add("bot_response");                
                 // Agregamos el mensaje de respuesta al acumulador de mensajes         
                 li_botmessage.innerHTML = message.text;
-                ul_messages.appendChild(li_botmessage);       
-                if(message.type == "option"){
+                ul_messages.appendChild(li_botmessage);
+                    
+                if(message.type == "option"){                    
+                    // Validamos si el mensaje viene con descripción
+                    if(message.description != undefined){
+                        // Creamos una etiqueta strong
+                        var description = document.createElement("strong");
+                        // Almacenamos dentro del description
+                        description.innerHTML = message.description;
+                        // Anexamos el elemento al listado de mensajes
+                        ul_messages.appendChild(description);
+                        // Agregamos un elemento br
+                        ul_messages.appendChild(document.createElement("br"));
+                    }
                     // Mostramos las opciones que viajaron con el mensaje
                     message.options.forEach(option => {
                        // Por cada elemento vamos a renderizar una etiqueta a a modo de prueba
@@ -103,9 +145,11 @@
                        // Anexamos el mensaje al listado
                        ul_messages.appendChild(optionResponse);
                     });                    
-                }
-                
+                }                
             });
+            // Hacemos focus sobre el input
+            var iptMessageFromUser = document.querySelector("input[name='iptMessageFromUser']");
+            iptMessageFromUser.focus();
         }
         var btnEnviar = document.querySelector("#btnEnviar");
         btnEnviar.addEventListener('click', e => {

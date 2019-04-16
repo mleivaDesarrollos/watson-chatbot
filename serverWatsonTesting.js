@@ -1,7 +1,7 @@
 
 // Levantamos la libreria express
 var express = require("express");
-var watsonIntegration = require("./WatsonIntegration");
+var watsonIntegration = require("./Chatbot/WatsonIntegration");
 // Ejecutamos la libreria
 var app = express();
 // Definimos el puerto de conexión
@@ -19,8 +19,10 @@ app.post("/send", (req, res) => {
     var json = req.body;
     // Separamos el mensaje
     var message = json.message;
-    // Generamos una llamada a la api de integracion
-    watsonIntegration.message({userInput:message}).then((watsonMessage) => {
+    var context;
+    if(json.context != undefined) context = JSON.parse(json.context);
+    // Generamos una llamada a la api de integracion    
+    watsonIntegration.message({userInput:message, context: context}).then((watsonMessage) => {
         res.json(watsonMessage);
     }).catch((err) => {
         res.send("error al procesar mensaje")
