@@ -35,48 +35,48 @@ app.use(cookie());
 app.use(session({ secret: 'codigo secreto', resave: false, saveUninitialized: false }));
 
 // Lógica de auth
-app.post('/authenticate', (req, res) => {
-  var adMega = new ad(configAD);
-  var userData = req.body;
-  console.log(userData); // USR, PSW, STY
-  adMega.authenticate(userData.user + '@mega.com.ar', userData.pass, function (err, auth) {
-    if (auth) {
-      adMega.find('(&(sAMAccountName=' + userData.user + '))', function(err, results) {
-        // Separamos el primer nombre del usuario de AD
-        var firstName = results.users[0].givenName.split(" ")[0];   
-        req.session.username = userData.user;
-        req.session.firstname = firstName;
-        req.session.isLogged = true;  
-        res.cookie('nombreUsuario', req.session.firstname);
-        // Si checkbox==false --> vida de la cookie = 1hs
-        if (userData.stay == false) {
-          req.session.cookie.maxAge = 3600000; // milisegundos
-        }
+// app.post('/authenticate', (req, res) => {
+//   var adMega = new ad(configAD);
+//   var userData = req.body;
+//   console.log(userData); // USR, PSW, STY
+//   adMega.authenticate(userData.user + '@mega.com.ar', userData.pass, function (err, auth) {
+//     if (auth) {
+//       adMega.find('(&(sAMAccountName=' + userData.user + '))', function(err, results) {
+//         // Separamos el primer nombre del usuario de AD
+//         var firstName = results.users[0].givenName.split(" ")[0];   
+//         req.session.username = userData.user;
+//         req.session.firstname = firstName;
+//         req.session.isLogged = true;  
+//         res.cookie('nombreUsuario', req.session.firstname);
+//         // Si checkbox==false --> vida de la cookie = 1hs
+//         if (userData.stay == false) {
+//           req.session.cookie.maxAge = 3600000; // milisegundos
+//         }
 
-        res.send(true);
-      });
-    }
-    else res.send(false);
-  });
-});
+//         res.send(true);
+//       });
+//     }
+//     else res.send(false);
+//   });
+// });
 
-// GET LOGOUT
-app.get('/logout', (req, res, next) => {
-  req.session.destroy();
-  res.redirect(req.get('referer'));
-});
+// // GET LOGOUT
+// app.get('/logout', (req, res, next) => {
+//   req.session.destroy();
+//   res.redirect(req.get('referer'));
+// });
 
 
-app.use('/login', express.static('./public/login'));
+// app.use('/login', express.static('./public/login'));
 
-app.use(function (req, res, next) {
-  if (req.session.isLogged) {
-    next();
-  }
-  else {
-    res.sendFile(path.join(__dirname + '/public/login/login.html'));
-  }
-});
+// app.use(function (req, res, next) {
+//   if (req.session.isLogged) {
+//     next();
+//   }
+//   else {
+//     res.sendFile(path.join(__dirname + '/public/login/login.html'));
+//   }
+// });
 
 app.use('/', express.static('./public'));
 

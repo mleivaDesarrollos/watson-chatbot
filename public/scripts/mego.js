@@ -11,9 +11,9 @@
     const AWAITING_RESPONSE_MESSAGES = ["¿Seguís ahí?", "Te espero "];
     const FINISHING_CHAT_INACTIVITY_MESSAGES = ["Avisame cualquier cosa, yo siempre estoy aqui para cualquier consulta que tengas.", "Cuando tengas tiempo seguimos hablando!"];
     // Todos los tiempos se encuentran en valor milisegundos
-    const INTERVAL_AWAIT_RESPONSE = 60000;
-    const INTERVAL_FINISH_ACTIVITY = 120000;
-    const INTERVAL_POST_FINISH_DELAY = 4000;
+    const INTERVAL_AWAIT_RESPONSE = 99999999999; //60000
+    const INTERVAL_FINISH_ACTIVITY = 999999999; //120000 
+    const INTERVAL_POST_FINISH_DELAY = 9999999999; //120000
     var await_response_timeout_id, finish_message_timeout_id, reset_chatlog_timeout_id;
     
     var is_conversation_starting = false;
