@@ -14,7 +14,17 @@ const predefined_ticket_message = [
     "Se reporta que el usuario está teniendo el siguiente inconveniente:\n",
 ]
 
+// Cuando se solicitan los equipos asignados al usuario, se utiliza este mensaje como plantilla
+const MESSAGE_SHOW_WORKSTATION = {
+    type: "option",
+    text: "¿Cual de estos equipos sería el que tiene el problema?",
+    description: "Listado de equipos asignados"
+}
+
+const OTHER_WORKSTATION = { description: "Otro equipo fuera del listado", value: "OTHER_WS" };
+
 const GET_TICKET_CONTEXT_DATA = "require_ticket";
+const GET_WORKSTATION_NUMBER = "require_workstation";
 const GET_TICKET_PLACEHOLDER = "TICKET_NUMBER";
 
 const CONTEXT_CONVERSATION_ID = "conversation_id";
@@ -76,7 +86,7 @@ module.exports = function({param_workspace, param_version, param_headers, param_
     // Método que controla los mensajes
     this.message = function({userInput, context} = {}) {        
         // Configuramos el URI para poder realizar las consultas a la API
-        const URI = "https://gateway-syd.watsonplatform.net/assistant/api/v1/workspaces/" + this._workspace + "/message?version=" + this._version;
+        const URI = "https://gateway.watsonplatform.net/assistant/api/v1/workspaces/" + this._workspace + "/message?version=" + this._version;
         // Definimos método        
         const METHOD = "POST";        
         var promise = new Promise((resolve, reject) => {
@@ -162,7 +172,42 @@ module.exports = function({param_workspace, param_version, param_headers, param_
                             // Si hay errores en la consulta se muestra en consola
                             console.error(error);
                         }
-                    });
+                    });                    
+                    var require_workstation = context.hasOwnProperty(GET_WORKSTATION_NUMBER);
+                    // Si dentro de las variables de contexto llega la información de que se necesita el equipo, agregamos un mensaje adicional al listado de mensajes
+                    if(require_workstation){
+                        // Definimos un array de elementos que contendrá los equipos consultados
+                        var arrWorkstations = [];
+                        // Cargamos la libreria de CMDB
+                        var CMDB = require('../../CMDB/CMDB');
+                        // Obtenemos los equipos almacenados
+                        var arrWorkstations;
+                        var arrOptions = [];
+                        // Almacenamos los equipos en el array
+                        await CMDB.GetByUser({username:this._username}).then((workstation) => arrWorkstations = workstation);
+                        // Duplicamos la instancia de solicitud de mensaje para workstation
+                        var message_with_workstations = MESSAGE_SHOW_WORKSTATION;
+                        // Definimos que el mensaje viaja con propiedad workstation_select en true
+                        message_with_workstations.workstation_select = true;
+                        // Iteramos sobre todos los elementos del array obtenido para guardarlo en formato adecuado
+                        arrWorkstations.forEach(workstation => {
+                            // Agregamos la opcion
+                            var option = {
+                                description: workstation,
+                                value: workstation
+                            }
+                            // Anexamos la opción al array de opciones
+                            arrOptions.push(option);
+                        });
+                        // Agregamos la opcion de que se trate de un equipo fuera del listado asignado del usuario
+                        arrOptions.push(OTHER_WORKSTATION);
+                        // Guardamos las opciones en el objeto clonado
+                        message_with_workstations.options = arrOptions;
+                        // Empujamos el mensaje filtrado al arrMessages
+                        arrMessages.push(message_with_workstations);                        
+                        // Eliminamos del contexto la propiedad que indica que es necesaria una terminal                        
+                        delete context.require_workstation;
+                    }
                     // Agregamos los mensajes filtrados y el contexto a la respuesta procesada
                     processed_response.messages = arrMessages;                    
                     processed_response.context = context;

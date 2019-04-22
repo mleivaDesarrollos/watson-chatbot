@@ -1,9 +1,9 @@
  'use strict';
 // Constantes relacionadas con la conexión a WatsonCloud
 const USER = "apikey";
-const PASSWORD = "xpZgRwcyPkU8DiMoTCy0wo1TDTMrIoA5kZZNeuGRAUDF";
+const PASSWORD = "7dBb_5eahnse1zvJtVVgo0Ozcz3M_A3YpZJwbL-Sqem8";
 const VERSION = "2019-02-28";
-const WORKSPACE_ID = "e3c971dd-c06a-457f-9304-1c62e2e63832";
+const WORKSPACE_ID = "a78d1383-9ca9-49d8-a3cb-cc576947cc0b";
 // Cargamos los modulos de watson
 var msgModule =  require('./Watson/Message');
 
