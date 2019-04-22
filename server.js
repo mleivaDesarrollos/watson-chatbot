@@ -44,11 +44,11 @@ app.post('/authenticate', (req, res) => {
       adMega.find('(&(sAMAccountName=' + userData.user + '))', function(err, results) {
         // Separamos el primer nombre del usuario de AD
         var firstName = results.users[0].givenName.split(" ")[0];
-        var fullName = results.users[0].givenName;
+        var fullName = results.users[0].displayName;
         req.session.username = userData.user;
         req.session.firstname = firstName;
-        req.session.fullname = fullname;
-        req.session.isLogged = true;  
+        req.session.fullname = fullName;
+        req.session.isLogged = true;
         res.cookie('nombreUsuario', req.session.firstname);
         // Si checkbox==false --> vida de la cookie = 1hs
         if (userData.stay == false) {
@@ -94,7 +94,7 @@ app.post('/send', (req, res) => {
   let msgToSend = req.body;
   // Obtenemos el nombre del usuario sacado de la session
   let firstName = req.session.firstname;
-  let fullName = req.session.fullName;
+  let fullName = req.session.fullname;
   let username = req.session.username;
   // Separamos menssaje
   var message = msgToSend.message;
