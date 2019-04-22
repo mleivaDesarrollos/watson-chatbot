@@ -1,9 +1,9 @@
  'use strict';
 // Constantes relacionadas con la conexión a WatsonCloud
 const USER = "apikey";
-const PASSWORD = "7dBb_5eahnse1zvJtVVgo0Ozcz3M_A3YpZJwbL-Sqem8";
+const PASSWORD = "xpZgRwcyPkU8DiMoTCy0wo1TDTMrIoA5kZZNeuGRAUDF";
 const VERSION = "2019-02-28";
-const WORKSPACE_ID = "695c0ae2-9fe2-4df8-9778-7248f786eb61";
+const WORKSPACE_ID = "e3c971dd-c06a-457f-9304-1c62e2e63832";
 // Cargamos los modulos de watson
 var msgModule =  require('./Watson/Message');
 
@@ -17,9 +17,9 @@ const getAuthorization = function(){
 const HEADERS = {'Content-Type': 'application/json', 'Authorization' : getAuthorization()}
 
 module.exports = {
-    message: function({userInput, context, username}={}){
+    message: function({userInput, context, username, firstname, fullname}={}){
         // Generamos una nueva instancia del modulo
-        var msg = new msgModule({param_workspace:WORKSPACE_ID, param_version:VERSION, param_headers: HEADERS, param_username: username});        
+        var msg = new msgModule({param_workspace:WORKSPACE_ID, param_version:VERSION, param_headers: HEADERS, param_username: username, param_firstname: firstname, param_fullname: fullname});
         // Llamamos al mensaje
         return msg.message({userInput:userInput, context:context});
     }

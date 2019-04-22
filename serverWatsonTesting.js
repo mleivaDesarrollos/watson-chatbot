@@ -22,7 +22,7 @@ app.post("/send", (req, res) => {
     var context;
     if(json.context != undefined) context = JSON.parse(json.context);
     // Generamos una llamada a la api de integracion    
-    watsonIntegration.message({userInput:message, context: context}).then((watsonMessage) => {
+    watsonIntegration.message({userInput:message, context: context, username: "mleiva", firstname: "Maximiliano", fullname: "Maximiliano Leiva"}).then((watsonMessage) => {
         res.json(watsonMessage);
     }).catch((err) => {
         res.send("error al procesar mensaje")

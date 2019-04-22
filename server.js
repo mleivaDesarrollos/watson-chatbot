@@ -34,49 +34,51 @@ app.use(upload.array());
 app.use(cookie());
 app.use(session({ secret: 'codigo secreto', resave: false, saveUninitialized: false }));
 
-// Lógica de auth
-// app.post('/authenticate', (req, res) => {
-//   var adMega = new ad(configAD);
-//   var userData = req.body;
-//   console.log(userData); // USR, PSW, STY
-//   adMega.authenticate(userData.user + '@mega.com.ar', userData.pass, function (err, auth) {
-//     if (auth) {
-//       adMega.find('(&(sAMAccountName=' + userData.user + '))', function(err, results) {
-//         // Separamos el primer nombre del usuario de AD
-//         var firstName = results.users[0].givenName.split(" ")[0];   
-//         req.session.username = userData.user;
-//         req.session.firstname = firstName;
-//         req.session.isLogged = true;  
-//         res.cookie('nombreUsuario', req.session.firstname);
-//         // Si checkbox==false --> vida de la cookie = 1hs
-//         if (userData.stay == false) {
-//           req.session.cookie.maxAge = 3600000; // milisegundos
-//         }
+// Logica de autenticación
+app.post('/authenticate', (req, res) => {
+  var adMega = new ad(configAD);
+  var userData = req.body;
+  // console.log(userData); // USR, PSW, STY
+  adMega.authenticate(userData.user + '@mega.com.ar', userData.pass, function (err, auth) {
+    if (auth) {
+      adMega.find('(&(sAMAccountName=' + userData.user + '))', function(err, results) {
+        // Separamos el primer nombre del usuario de AD
+        var firstName = results.users[0].givenName.split(" ")[0];
+        var fullName = results.users[0].givenName;
+        req.session.username = userData.user;
+        req.session.firstname = firstName;
+        req.session.fullname = fullname;
+        req.session.isLogged = true;  
+        res.cookie('nombreUsuario', req.session.firstname);
+        // Si checkbox==false --> vida de la cookie = 1hs
+        if (userData.stay == false) {
+          req.session.cookie.maxAge = 3600000; // milisegundos
+        }
 
-//         res.send(true);
-//       });
-//     }
-//     else res.send(false);
-//   });
-// });
+        res.send(true);
+      });
+    }
+    else res.send(false);
+  });
+});
 
-// // GET LOGOUT
-// app.get('/logout', (req, res, next) => {
-//   req.session.destroy();
-//   res.redirect(req.get('referer'));
-// });
+// GET LOGOUT
+app.get('/logout', (req, res, next) => {
+  req.session.destroy();
+  res.redirect(req.get('referer'));
+});
 
 
-// app.use('/login', express.static('./public/login'));
+app.use('/login', express.static('./public/login'));
 
-// app.use(function (req, res, next) {
-//   if (req.session.isLogged) {
-//     next();
-//   }
-//   else {
-//     res.sendFile(path.join(__dirname + '/public/login/login.html'));
-//   }
-// });
+app.use(function (req, res, next) {
+  if (req.session.isLogged) {
+    next();
+  }
+  else {
+    res.sendFile(path.join(__dirname + '/public/login/login.html'));
+  }
+});
 
 app.use('/', express.static('./public'));
 
@@ -91,13 +93,16 @@ app.post('/send', (req, res) => {
   // Separamos el componente JSON enviado
   let msgToSend = req.body;
   // Obtenemos el nombre del usuario sacado de la session
-  let userFirstName = req.session.firstname;
+  let firstName = req.session.firstname;
+  let fullName = req.session.fullName;
+  let username = req.session.username;
   // Separamos menssaje
   var message = msgToSend.message;
   var context;
   if(msgToSend.context != undefined) context = JSON.parse(msgToSend.context);
   var chatbot = require('./Chatbot/WatsonIntegration');
-  chatbot.message({userInput: msgToSend.message, context: context, username: userFirstName}).then((messageFromBot) => {
+  // TODO : Sacar el harcodeado
+  chatbot.message({userInput: message, context: context, firstname: firstName, fullname: fullName,  username: username}).then((messageFromBot) => {
       res.json(messageFromBot);
   });
 })

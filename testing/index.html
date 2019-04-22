@@ -88,8 +88,7 @@
         var renderResponse = function(response){
             // Levantamos el listado
             var ul_messages = document.querySelector(".message-list");
-            // Parseamos el elemento JSON
-            console.log(response);
+            // Parseamos el elemento JSON            
             var json = JSON.parse(response);
             // Validamos si el mensaje viene con contexto
             if(json.context != undefined) {
