@@ -69,16 +69,16 @@ app.get('/logout', (req, res, next) => {
 });
 
 
-app.use('/login', express.static('./public/login'));
+// app.use('/login', express.static('./public/login'));
 
-app.use(function (req, res, next) {
-  if (req.session.isLogged) {
-    next();
-  }
-  else {
-    res.sendFile(path.join(__dirname + '/public/login/login.html'));
-  }
-});
+// app.use(function (req, res, next) {
+//   if (req.session.isLogged) {
+//     next();
+//   }
+//   else {
+//     res.sendFile(path.join(__dirname + '/public/login/login.html'));
+//   }
+// });
 
 app.use('/', express.static('./public'));
 

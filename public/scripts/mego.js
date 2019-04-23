@@ -15,6 +15,7 @@
     const INTERVAL_FINISH_ACTIVITY = 999999999; //120000 
     const INTERVAL_POST_FINISH_DELAY = 9999999999; //120000
     var await_response_timeout_id, finish_message_timeout_id, reset_chatlog_timeout_id;
+    var pending_delivering_messages = [];
     
     var is_conversation_starting = false;
     // Inicializamos estilos
@@ -265,6 +266,36 @@
             // Enviamos la información
             xhr.send(data);
         }
+    }    
+    var send_stacked_messages = function(){
+        if(pending_delivering_messages.length>0){
+            var length_message = pending_delivering_messages[0].text.length;
+            var await_time_ms = 900;
+
+            if(length_message>100){
+                await_time_ms = 5000;
+            }
+
+            if(indice==0){
+                await_time_ms = 0;
+            }
+            console.log(pending_delivering_messages[0]);
+            // Obtenemos el primer mensaje en la cola de mensajes
+            var message = pending_delivering_messages[0];
+            // Removemos el elemento del arreglo
+            pending_delivering_messages.shift();
+            setTimeout(function(){
+                // definimos el tipo de mensaje a ejecutar
+                switch(message.type){
+                    case "text":
+                        generate_message(message.text, "bot");
+                        break;
+                    case "option":
+                        generate_message(message, "option");
+                        break;
+                };
+            },await_time_ms);
+        }
     }
     // Versión modificada con agregados de Mauro Barroso
     var RenderResponseMessage = function (responseFromServer) {
@@ -272,17 +303,31 @@
         var JsonResp = JSON.parse(responseFromServer);
         // Renderizamos la respuesta del bot
         // Iteramos sobre todos los mensajes recibidos
-        JsonResp.messages.forEach(message => { 
-            // Generamos el mensaje
-            switch(message.type){
-                case "text":
-                    generate_message(message.text, "bot");
-                    break;
-                case "option":
-                    generate_message(message, "option");
-                    break;
-            }
+        JsonResp.messages.forEach(message => {
+            pending_delivering_messages.push(message);
         });
+        // Iniciamos la distribución de mensajes acumulados
+        send_stacked_messages();
+        // var await_time_ms = 900;
+        // var message_counter = 1;
+        // JsonResp.messages.forEach(message => {
+        //     var current_await_time = await_time_ms;
+        //     if(message.text.length > 100){
+        //         current_await_time *= 3;
+        //     }
+        //     setTimeout(function(){
+        //     // Generamos el mensaje            
+        //     switch(message.type){
+        //         case "text":
+        //             generate_message(message.text, "bot");
+        //             break;
+        //         case "option":
+        //             generate_message(message, "option");
+        //             break;
+        //     }}, current_await_time * message_counter);
+
+        //     message_counter++;
+        // });
         // Guardamos el contexto en el documento
         var inpContext = document.querySelector(CONTEXT_DATA);
         // Si no existe el hidden de la etiqueta se genera
@@ -298,7 +343,7 @@
         if (inpContext != undefined) inpContext.value = JSON.stringify(JsonResp.context);
         // Si no es el inicio de la conversación,
         if(is_conversation_starting == false) start_inactivity_check();
-        loader.classList.remove("active");
+        //loader.classList.remove("active");
     }
 
     var startConversation = function () {
@@ -340,19 +385,17 @@
             message: _msg,
             context: contextValue
         }
-        setTimeout(() => {
-            // Preparamos la solicitud ajax para hacer el envío de información
-            AjaxCall({
-                url: CHATBOT_URL,
-                method: CHATBOT_HTTPMETHOD,
-                callback: RenderResponseMessage,
-                data: info,
-                json: true
-            });
-        }, 1400);
+        // Preparamos la solicitud ajax para hacer el envío de información
+        AjaxCall({
+            url: CHATBOT_URL,
+            method: CHATBOT_HTTPMETHOD,
+            callback: RenderResponseMessage,
+            data: info,
+            json: true
+        });
         // Generamos mensaje del usuario
         generate_message(_msg, 'usuario');
-        loader.classList.add("active");
+        //loader.classList.add("active");
     }
 
     var close_chatbox = function () {
@@ -412,7 +455,6 @@
 
     var disable_options = function(ul){
         var li_options = ul.querySelectorAll("li");
-        console.log(li_options);
         li_options.forEach(li => {
             li.addEventListener("click",function(e){
                 li_options.forEach(li_brothers => {
@@ -431,6 +473,8 @@
     }
 
     var generate_message = function (msg, type) {
+        // Variable que determina si la conversacion empieza
+        var conversation_starting = indice > 1;
         //Aumentamos el indice que representa la cantidad de mensajes que aparecen en pantalla
         indice++;
         // Capturamos chat-logs
@@ -457,11 +501,15 @@
         }
 
         if(type=="usuario"){
-            cm_msg_text.style.borderTopLeftRadius = "0px";
+            cm_msg_text.style.borderTopLeftRadius="0px";
+            if(conversation_starting){
+                loader.classList.add("active");
+            }
         }
 
         if(type=="bot"){
-            cm_msg_text.style.borderBottomRightRadius = "0px";
+            cm_msg_text.style.borderBottomRightRadius="0px";
+            loader.classList.remove("active");
         }
 
         // AppendChild de elementos
@@ -495,7 +543,7 @@
             // Seteamos clase a UL
             contenedorUl.setAttribute("class","opciones");
             
-        
+            loader.classList.remove("active");
             contenedorH7.innerHTML = msg.text;
             contenedorEm.innerHTML = msg.description;
 
@@ -541,6 +589,11 @@
                 $("#chat-submit").prop('disabled', false);
             }
         }
+
+        if(type == 'bot' || type == 'option'){ 
+                send_stacked_messages();
+        }
+
     }
 
     $("#chat-circle").click(function () {
