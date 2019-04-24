@@ -391,6 +391,7 @@
             data: info,
             json: true
         });
+        if(_msg == "OTHER_WS") _msg = "Otro equipo diferente";
         // Generamos mensaje del usuario
         generate_message(_msg, 'usuario');
         //loader.classList.add("active");
