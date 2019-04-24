@@ -308,26 +308,6 @@
         });
         // Iniciamos la distribución de mensajes acumulados
         send_stacked_messages();
-        // var await_time_ms = 900;
-        // var message_counter = 1;
-        // JsonResp.messages.forEach(message => {
-        //     var current_await_time = await_time_ms;
-        //     if(message.text.length > 100){
-        //         current_await_time *= 3;
-        //     }
-        //     setTimeout(function(){
-        //     // Generamos el mensaje            
-        //     switch(message.type){
-        //         case "text":
-        //             generate_message(message.text, "bot");
-        //             break;
-        //         case "option":
-        //             generate_message(message, "option");
-        //             break;
-        //     }}, current_await_time * message_counter);
-
-        //     message_counter++;
-        // });
         // Guardamos el contexto en el documento
         var inpContext = document.querySelector(CONTEXT_DATA);
         // Si no existe el hidden de la etiqueta se genera
