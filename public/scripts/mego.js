@@ -283,10 +283,11 @@
                     break;
             }
         });
+        if(JsonResp.context != undefined) console.log(JsonResp.context);
         // Guardamos el contexto en el documento
         var inpContext = document.querySelector(CONTEXT_DATA);
         // Si no existe el hidden de la etiqueta se genera
-        if (inpContext == undefined && JsonResp.context != undefined) {
+        if (inpContext == undefined && JsonResp.context != undefined) {            
             // Generamos un elemento
             inpContext = document.createElement('input')
             // Definimos los parametros del elemento
@@ -334,12 +335,30 @@
         // Disponemos una variable temporal para almacenar el contenido del valor
         let contextValue;
         // Validamos si la etiqueta existe
-        if (inpContext != undefined) contextValue = inpContext.value;
+        if (inpContext != undefined) {
+            contextValue = inpContext.value;
+            // Parseamos el contexto
+            JSONcontext = JSON.parse(contextValue);
+            // Validamos si en el contexto viaja la solicitud de requerimiento de PC
+            if(JSONcontext.require_workstation){
+                // Eliminamos la propiedad
+                delete JSONcontext.require_workstation;
+                // Establecemos propiedad en el contexto que indique que estamos devolviendo una terminal en respuesta
+                JSONcontext.sending_workstation = "true";                
+            }
+            if(JSONcontext.require_address){
+                // Configuramos la propiedad de envio de dirección
+                JSONcontext.sending_address = "true";
+                
+            }
+            // Convertimos el contexto modificado a String
+            contextValue = JSON.stringify(JSONcontext);            
+        }        
         // Preparamos los datos para enviar
         var info = {
             message: _msg,
             context: contextValue
-        }
+        }        
         setTimeout(() => {
             // Preparamos la solicitud ajax para hacer el envío de información
             AjaxCall({
@@ -350,6 +369,8 @@
                 json: true
             });
         }, 1400);
+        // Validamos si el mensaje es de tipo comodin para solicitar equipos
+        if(_msg == "OTHER_WS") _msg = "Otro equipo";
         // Generamos mensaje del usuario
         generate_message(_msg, 'usuario');
         loader.classList.add("active");

@@ -89,7 +89,7 @@ module.exports = function({param_workspace, param_version, param_headers, param_
         const URI = "https://gateway.watsonplatform.net/assistant/api/v1/workspaces/" + this._workspace + "/message?version=" + this._version;
         // Definimos método        
         const METHOD = "POST";        
-        var promise = new Promise((resolve, reject) => {
+        var promise = new Promise(async (resolve, reject) => {
             // Disponemos el método para obtener la información
             var getData = function(messageToConvert, context) {
                 var body = {
@@ -102,7 +102,34 @@ module.exports = function({param_workspace, param_version, param_headers, param_
                 return JSON.stringify(body);
             }
             // Validamos si el mensaje viene vacio
-            if(userInput != '' && userInput != undefined){       
+            if(userInput != '' && userInput != undefined){                
+                // Validamos si la solicitud viaja con la terminal
+                if(context != undefined){
+                    if(context.sending_workstation) {
+                        // Guardamos la variable de contexto en el objeto para que viaje a watson                    
+                        context.Numero_de_terminal = userInput;
+                        // Validamos si el usuario indico que va a poner otra máquina
+                        if(userInput != OTHER_WORKSTATION.value){
+                            // Levantamos la libreria al CMDB
+                            var CMDB = require('../../CMDB/CMDB');
+                            // Disponemos un acumulador de direccion
+                            var location;
+                            // Ejecutamos la consulta al CMDB con los datos provistos
+                            await CMDB.GetWorkstationLocation({username:this._username, workstation: userInput}).then((locationFinded) =>{
+                                location = locationFinded;
+                            });                        
+                            // Guardamos la dirección dentro del contexto
+                            context.Direccion_donde_esta_el_equipo = location;                                                    
+                            // Eliminamos la propiedad del contexto
+                            delete context.sending_workstation;    
+                        }                    
+                    } else if(context.sending_address){                        
+                        // Guardamos la variable de contexto para que la visualice watson
+                        context.Direccion_donde_esta_el_equipo = userInput;
+                        // Eliminamos la propiedad proveniente del cliente
+                        delete context.sending_address;
+                    }                     
+                }
                 // Ejecutamos la petición de envío de mensajes
                 request({
                     headers: this._headers,
@@ -205,12 +232,10 @@ module.exports = function({param_workspace, param_version, param_headers, param_
                         message_with_workstations.options = arrOptions;
                         // Empujamos el mensaje filtrado al arrMessages
                         arrMessages.push(message_with_workstations);                        
-                        // Eliminamos del contexto la propiedad que indica que es necesaria una terminal                        
-                        delete context.require_workstation;
                     }
                     // Agregamos los mensajes filtrados y el contexto a la respuesta procesada
                     processed_response.messages = arrMessages;                    
-                    processed_response.context = context;
+                    processed_response.context = context;                    
                     // Resolvemos la promise                
                     resolve(processed_response);
                 });
