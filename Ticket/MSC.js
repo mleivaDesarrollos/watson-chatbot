@@ -30,9 +30,18 @@ var get = function({message_details} = {}) {
             body: JSON.stringify(body)
         }, function(err, response, ticketId) {
             // Validamos si existen errores en la validacion
-            if(err) return reject("TicketError: " + err);
-            // Si pasamos la fase de validación, quiere decir que se logró la petición de manera correcta
-            resolve(JSON.parse(ticketId)[0].Ticketid);
+            if(err){
+                // Logueamos si hay error
+                return reject("TicketError: " + err);
+            }
+            try{
+                // Intentamos parsear el ticket
+                var ticket_no = JSON.parse(ticketId)[0].Ticketid;
+                // Devolvemos el ticket procesado
+                resolve(ticket_no);
+            } catch (e) {
+                reject(console.error("MSC Interaction Error: parseando el número recibido"));
+            }
         });      
     });
     // Devolvemos la promesa procesada

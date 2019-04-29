@@ -97,15 +97,24 @@ var CheckTicketRequestAndGenerateTicketNumber = async ({ caller_context, usernam
         // Dejamos un acumulador de numero de tickets
         var ticket_number;
         // Generamos un nuevo ticket y aguardamos el resultado
-        await MSC.Get({ message_details: cliente_details }).then((ticketNumber) => { ticket_number = ticketNumber });
+        await MSC.Get({ message_details: cliente_details }).then((ticketNumber) => 
+        { ticket_number = ticketNumber })
+        .catch((error) => {
+            ticket_number = "ERROR"
+        });
         // Iteramos sobre los mensajes filtrados
         for(let i = 0; i < filtered_messages.length; i++){
             // Iteramos hasta encontrar el mensaje con el placeholder del ticket
             if (filtered_messages[i].text.includes(GET_TICKET_PLACEHOLDER)) {
                 // Guardamos el mensaje en una variable
                 let message = filtered_messages[i];
-                // Una vez encontrado, reemplazamos el texto con el ticket encontrado
-                message.text = message.text.replace(GET_TICKET_PLACEHOLDER, ticket_number);
+                // Validamos si el mensaje llega en estado error
+                if(ticket_number != "ERROR"){
+                    // Una vez encontrado, reemplazamos el texto con el ticket encontrado
+                    message.text = message.text.replace(GET_TICKET_PLACEHOLDER, ticket_number);
+                } else {
+                    message.text = "Lamentablemente el sistema de tickets actualmente no está funcionando. Intenta nuevamente mas tarde.";
+                }
                 // Reemplazamos el elemento del array en la ubicación
                 filtered_messages[i] = message;
             }
