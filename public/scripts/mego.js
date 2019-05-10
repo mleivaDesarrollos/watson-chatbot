@@ -11,9 +11,9 @@
     const AWAITING_RESPONSE_MESSAGES = ["¿Seguís ahí?", "Te espero "];
     const FINISHING_CHAT_INACTIVITY_MESSAGES = ["Avisame cualquier cosa, yo siempre estoy aqui para cualquier consulta que tengas.", "Cuando tengas tiempo seguimos hablando!"];
     // Todos los tiempos se encuentran en valor milisegundos
-    const INTERVAL_AWAIT_RESPONSE = 99999999999; //60000
-    const INTERVAL_FINISH_ACTIVITY = 999999999; //120000 
-    const INTERVAL_POST_FINISH_DELAY = 9999999999; //120000
+    const INTERVAL_AWAIT_RESPONSE = 60000; //60000
+    const INTERVAL_FINISH_ACTIVITY = 120000; //120000 
+    const INTERVAL_POST_FINISH_DELAY = 120000; //120000
     var await_response_timeout_id, finish_message_timeout_id, reset_chatlog_timeout_id;
     var pending_delivering_messages = [];
     
@@ -267,7 +267,7 @@
             xhr.send(data);
         }
     }    
-    var send_stacked_messages = function(){
+    var send_stacked_messages = function(resetChat){
         if(pending_delivering_messages.length>0){
             var length_message = pending_delivering_messages[0].text.length;
             var await_time_ms = 900;
@@ -279,7 +279,7 @@
             if(indice==0){
                 await_time_ms = 0;
             }
-            console.log(pending_delivering_messages[0]);
+            //console.log(pending_delivering_messages[0]);
             // Obtenemos el primer mensaje en la cola de mensajes
             var message = pending_delivering_messages[0];
             // Removemos el elemento del arreglo
@@ -294,24 +294,42 @@
                         generate_message(message, "option");
                         break;
                 };
+                if(resetChat==true){
+                   setTimeout(function(){
+                    reseting_chat_after_inactivity();
+                   },3000);
+                }
             },await_time_ms);
         }
     }
+
     // Versión modificada con agregados de Mauro Barroso
     var RenderResponseMessage = function (responseFromServer) {
         // Obtenemos el objeto JSON CSSSecond lo parseamos
         var JsonResp = JSON.parse(responseFromServer);
+        var loader = document.querySelector("#loader");
+        var isResetingChat = false;
         // Renderizamos la respuesta del bot
         // Iteramos sobre todos los mensajes recibidos
         JsonResp.messages.forEach(message => {
             pending_delivering_messages.push(message);
         });
-        // Iniciamos la distribución de mensajes acumulados
-        send_stacked_messages();
+        
         // Guardamos el contexto en el documento
         var inpContext = document.querySelector(CONTEXT_DATA);
         // Si no existe el hidden de la etiqueta se genera
-        if (inpContext == undefined && JsonResp.context != undefined) {            
+        // Luego del primer mensaje, dejamos el if habilitado para corroborar la existencia de finish_chat
+        if(JsonResp.context != undefined){
+            if(JsonResp.context.finish_chat){
+                inpContext = undefined;
+                    loader.style.display = "none";
+                    isResetingChat = true;
+            };
+        }
+        // Iniciamos la distribución de mensajes acumulados
+        send_stacked_messages(isResetingChat);
+
+        if (inpContext == undefined && JsonResp.context != undefined) {
             // Generamos un elemento
             inpContext = document.createElement('input')
             // Definimos los parametros del elemento
@@ -320,6 +338,7 @@
             // Anexamos el elemento al body
             document.body.appendChild(inpContext);
         }
+
         if (inpContext != undefined) inpContext.value = JSON.stringify(JsonResp.context);
         // Si no es el inicio de la conversación,
         if(is_conversation_starting == false) start_inactivity_check();
