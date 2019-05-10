@@ -1,5 +1,6 @@
 // Cargamos la librería request
 var request = require('request');
+var log = require('../../Log');
 
 // Definimos constanets
 const predefined_welcome_message = [
@@ -67,41 +68,69 @@ var filter_message_by_type = function ({ message } = {}) {
     return return_message;
 }
 
-var CheckTicketRequestAndGenerateTicketNumber = async ({ caller_context, username, fullname, filtered_messages }) => {
+var CheckTicketRequestAndGenerateTicketNumber = async ({ caller_context, filtered_messages, authorization }) => {
     // Verificamos si Watson nos solicita tickets
     var require_ticket = caller_context.hasOwnProperty(GET_TICKET_CONTEXT_DATA);
     // Validamos si en la petición enviada llego un mensaje donde solicita ticket
-    if (require_ticket) {
-        // Cargamos la libreria que gestiona la carga de tickets
-        var MSC = require("../../Ticket/MSC");
+    if (require_ticket) {        
+        // var MSC = require("../../Ticket/MSC");        
         // Levantamos una variable que almacene el contenido del mensaje que será enviado al cliente
-        var cliente_details = predefined_ticket_message[Math.floor(Math.random() * predefined_ticket_message.length)];
-        // Cargamos los datos básicos del usuario
-        var username_data = "-Nombre de usuario : " + username + "\n";
-        var fullname_data = "-Nombre completo del usuario : " + fullname + "\n";
-        // Anexamos estos datos al compuesto del ticket
-        cliente_details += username_data + fullname_data;
+        var description = predefined_ticket_message[Math.floor(Math.random() * predefined_ticket_message.length)];
+        // Disponemos una variable para el título
+        var title;
+        // Disponemos una variable para el código de categoría
+        var category;
         // Iteramos sobre los elementos del contexto
         for (var property in caller_context) {
             // Validamos si la propiedad son las bases
             if (property == CONTEXT_CONVERSATION_ID || property == CONTEXT_SYSTEM || property == "require_ticket") {
                 continue;
             }
+            // Validamos si el tipo de problema viene cargado
+            if (property.toLowerCase().includes("tipo_de_problema")){
+                // Guardamos el tipo de problema como si fuera el título del ticket
+                title = caller_context[property];
+            }
+            // Validamos si en la iteración actual viene el id de Categoria
+            if (property.toLowerCase().includes("categoria")) {
+                // Guardamos el contexto en la variable
+                category = caller_context[property];
+            }
             // Preparamos la descripción del tipo de dato a agregar al ticket
             var label = property.replace(/_/g, " ");
             // Guardamos el dato que viene en la etiqueta
             var information = caller_context[property];
             // Almacenamos la información dentro del ticket
-            cliente_details += "-" + label + " : " + information + "\n";
+            description += "-" + label + " : " + information + "\n";
         }
         // Dejamos un acumulador de numero de tickets
-        var ticket_number;
-        // Generamos un nuevo ticket y aguardamos el resultado
-        await MSC.Get({ message_details: cliente_details }).then((ticketNumber) => 
-        { ticket_number = ticketNumber })
-        .catch((error) => {
-            ticket_number = "ERROR"
-        });
+        var ticket = {} ;
+        // Si todos los campos estan cargados
+        if(description && title && category){   
+            // Generamos un nuevo ticket usando GLPI
+            var GLPIClass = require('../../Ticket/GLPI');
+            // Instanciamos un nuevo objeto GLPI
+            var GLPI = new GLPIClass({user_auth: authorization, tkt_title: title, tkt_description: description, tkt_category: category});
+            // Solicitamos la generación de tickets
+            await GLPI.CreateTicketAndRetrieveIDAndGroups().then(ticket_result => {
+                // Guardamos las variables recibidas
+                ticket.id = ticket_result.id;
+                ticket.groups = ticket_result.groups;
+            }).catch(function(){
+                ticket.id = "ERROR"
+            });
+        } else {
+            // Informamos el error
+            ticket.id = "ERROR";
+            // Logueamos en sistema
+            log.Register("Error - WatsonMessage - En el contexto está faltando la descripción, la categoria o el titulo.");
+        }   
+        // // Generamos un nuevo ticket y aguardamos el resultado
+        // await MSC.Get({ message_details: cliente_details }).then((ticketNumber) => 
+        // { ticket_number = ticketNumber })
+        // .catch((error) => {
+        //     ticket_number = "ERROR"
+        // });
         // Iteramos sobre los mensajes filtrados
         for(let i = 0; i < filtered_messages.length; i++){
             // Iteramos hasta encontrar el mensaje con el placeholder del ticket
@@ -109,9 +138,37 @@ var CheckTicketRequestAndGenerateTicketNumber = async ({ caller_context, usernam
                 // Guardamos el mensaje en una variable
                 let message = filtered_messages[i];
                 // Validamos si el mensaje llega en estado error
-                if(ticket_number != "ERROR"){
+                if(ticket.id != "ERROR"){
+                    // Preparamos el mensaje de reemplazo
+                    let replace_info = ticket.id;
+                    // Iteramos sobre los grupos que recibimos
+                    if(ticket.groups != undefined && ticket.groups.length > 0){
+                        // Agregamos la info del grupo
+                        replace_info += "y esta asignado a ";
+                        // Validamos si es mas de un grupo
+                        if(ticket.groups.length > 1){
+                            replace_info += "los grupos ";
+                        } else {
+                            replace_info += "el grupo ";
+                        }
+                        for(let i = 0; i < ticket.groups.length; i++){
+                            // Agregamos el nombre del grupo
+                            replace_info += ticket.groups[i];
+                            // Validamos si llegamos al final del recorrido de grupos
+                            if( i+1 < ticket.groups.length - 1 ){
+                                // Cuando hay mas grupos para agregar agregamos una coma
+                                replace_info += ticket.groups[ i ] + ", ";
+                            } else if ( i+1 == ticket.groups.length -1 ) {
+                                // Cuando queda un grupo más por mostrar
+                                replace_info += ticket.groups[ i ] + " y ";
+                            } else {
+                                // Cuando es el ultimo o unico grupo
+                                replace_info += ticket.groups[ i ];
+                            }
+                        }
+                    }   
                     // Una vez encontrado, reemplazamos el texto con el ticket encontrado
-                    message.text = message.text.replace(GET_TICKET_PLACEHOLDER, ticket_number);
+                    message.text = message.text.replace(GET_TICKET_PLACEHOLDER, replace_info);
                 } else {
                     message.text = "Lamentablemente el sistema de tickets actualmente no está funcionando. Intenta nuevamente mas tarde.";
                 }
@@ -233,7 +290,7 @@ var getData = function (messageToConvert, context) {
 // Una de los posibles formateos debería ser : detectar en los intents si se inicio por microinformatica, infraestructura, o administrativo
 // Este mensaje se enviará al cliente como respuesta. El mensaje debe enviarlo la funcion mensaje
 
-module.exports = function ({ param_workspace, param_version, param_headers, param_username, param_firstname, param_fullname } = {}) {
+module.exports = function ({ param_workspace, param_version, param_headers, param_username, param_firstname, param_fullname, param_auth } = {}) {
     // Validamos si la información viene cargada correctamente
     if (param_workspace == undefined || param_version == undefined) throw 'No es posible generar instancia de mensaje sin Workspace y Version';
     // Almacenamos los elementos en sus correspondientes ubicaciones
@@ -243,6 +300,7 @@ module.exports = function ({ param_workspace, param_version, param_headers, para
     this._username = param_username;
     this._firstname = param_firstname;
     this._fullname = param_fullname;
+    this._auth = param_auth;
     // Método que controla los mensajes
     this.message = function ({ userInput, context } = {}) {
         // Configuramos el URI para poder realizar las consultas a la API
@@ -291,7 +349,7 @@ module.exports = function ({ param_workspace, param_version, param_headers, para
                         }
                     });
                     // Validamos si dentro del contexto llega una solicitud de ticket
-                    arrMessages = await CheckTicketRequestAndGenerateTicketNumber({ caller_context: context, username: this._username, fullname: this._fullname, filtered_messages: arrMessages });
+                    arrMessages = await CheckTicketRequestAndGenerateTicketNumber({ caller_context: context, username: this._username, fullname: this._fullname, filtered_messages: arrMessages, authorization: this._auth });
                     // Validamos si dentro del contexto llega una solicitud
                     arrMessages = await CheckWorkstationRequirementAndRetrieveMessageWithWorkstationList({ caller_context: context, username: this._username, filtered_messages: arrMessages });
                     // Validamos si la solicitud tiene un requerimiento de reinicio

@@ -17,9 +17,9 @@ const getAuthorization = function(){
 const HEADERS = {'Content-Type': 'application/json', 'Authorization' : getAuthorization()}
 
 module.exports = {
-    message: function({userInput, context, username, firstname, fullname}={}){
+    message: function({userInput, context, username, firstname, fullname, auth}={}){
         // Generamos una nueva instancia del modulo
-        var msg = new msgModule({param_workspace:WORKSPACE_ID, param_version:VERSION, param_headers: HEADERS, param_username: username, param_firstname: firstname, param_fullname: fullname});
+        var msg = new msgModule({param_workspace:WORKSPACE_ID, param_version:VERSION, param_headers: HEADERS, param_username: username, param_firstname: firstname, param_fullname: fullname, param_auth: auth});
         // Llamamos al mensaje
         return msg.message({userInput:userInput, context:context});
     }
