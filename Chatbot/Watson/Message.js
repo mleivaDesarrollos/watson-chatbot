@@ -73,7 +73,9 @@ var CheckTicketRequestAndGenerateTicketNumber = async ({ caller_context, filtere
     var require_ticket = caller_context.hasOwnProperty(GET_TICKET_CONTEXT_DATA);
     // Validamos si en la petición enviada llego un mensaje donde solicita ticket
     if (require_ticket) {        
-        // var MSC = require("../../Ticket/MSC");        
+        // var MSC = require("../../Ticket/MSC");
+        // Eliminamos la propiedad de requerimiento de ticket para no generar duplicados
+        delete caller_context["require_ticket"];
         // Levantamos una variable que almacene el contenido del mensaje que será enviado al cliente
         var description = predefined_ticket_message[Math.floor(Math.random() * predefined_ticket_message.length)];
         // Disponemos una variable para el título
@@ -92,16 +94,17 @@ var CheckTicketRequestAndGenerateTicketNumber = async ({ caller_context, filtere
                 title = caller_context[property];
             }
             // Validamos si en la iteración actual viene el id de Categoria
-            if (property.toLowerCase().includes("categoria")) {
+            else if (property.toLowerCase().includes("categoria")) {
                 // Guardamos el contexto en la variable
                 category = caller_context[property];
+            } else {
+                // Preparamos la descripción del tipo de dato a agregar al ticket
+                var label = property.replace(/_/g, " ");
+                // Guardamos el dato que viene en la etiqueta
+                var information = caller_context[property];
+                // Almacenamos la información dentro del ticket
+                description += "-" + label + " : " + information + "\n";
             }
-            // Preparamos la descripción del tipo de dato a agregar al ticket
-            var label = property.replace(/_/g, " ");
-            // Guardamos el dato que viene en la etiqueta
-            var information = caller_context[property];
-            // Almacenamos la información dentro del ticket
-            description += "-" + label + " : " + information + "\n";
         }
         // Dejamos un acumulador de numero de tickets
         var ticket = {} ;
@@ -144,7 +147,7 @@ var CheckTicketRequestAndGenerateTicketNumber = async ({ caller_context, filtere
                     // Iteramos sobre los grupos que recibimos
                     if(ticket.groups != undefined && ticket.groups.length > 0){
                         // Agregamos la info del grupo
-                        replace_info += "y esta asignado a ";
+                        replace_info += " y esta asignado a ";
                         // Validamos si es mas de un grupo
                         if(ticket.groups.length > 1){
                             replace_info += "los grupos ";
@@ -152,8 +155,6 @@ var CheckTicketRequestAndGenerateTicketNumber = async ({ caller_context, filtere
                             replace_info += "el grupo ";
                         }
                         for(let i = 0; i < ticket.groups.length; i++){
-                            // Agregamos el nombre del grupo
-                            replace_info += ticket.groups[i];
                             // Validamos si llegamos al final del recorrido de grupos
                             if( i+1 < ticket.groups.length - 1 ){
                                 // Cuando hay mas grupos para agregar agregamos una coma
@@ -178,7 +179,10 @@ var CheckTicketRequestAndGenerateTicketNumber = async ({ caller_context, filtere
         }
     }
     // Retornamos los mensajes filtrados con el reemplazo hecho sobre el array de mensajes que recibimos por parametro
-    return filtered_messages;
+    return {
+        messages: filtered_messages,
+        context: caller_context
+    };
 }
 
 var CheckWorkstationRequirementAndRetrieveMessageWithWorkstationList = async ({ caller_context, username, filtered_messages }) => {
@@ -348,15 +352,15 @@ module.exports = function ({ param_workspace, param_version, param_headers, para
                             console.error(error);
                         }
                     });
+                    // Agregamos los mensajes filtrados y el contexto a la respuesta procesada
+                    processed_response.messages = arrMessages;
+                    processed_response.context = context;
                     // Validamos si dentro del contexto llega una solicitud de ticket
-                    arrMessages = await CheckTicketRequestAndGenerateTicketNumber({ caller_context: context, username: this._username, fullname: this._fullname, filtered_messages: arrMessages, authorization: this._auth });
+                    processed_response = await CheckTicketRequestAndGenerateTicketNumber({ caller_context: context, username: this._username, fullname: this._fullname, filtered_messages: arrMessages, authorization: this._auth });
                     // Validamos si dentro del contexto llega una solicitud
                     arrMessages = await CheckWorkstationRequirementAndRetrieveMessageWithWorkstationList({ caller_context: context, username: this._username, filtered_messages: arrMessages });
                     // Validamos si la solicitud tiene un requerimiento de reinicio
                     context = CheckAndRestartChat({caller_context: context});
-                    // Agregamos los mensajes filtrados y el contexto a la respuesta procesada
-                    processed_response.messages = arrMessages;
-                    processed_response.context = context;
                     // Resolvemos la promise                
                     resolve(processed_response);
                 });
