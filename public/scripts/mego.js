@@ -16,6 +16,7 @@
     const INTERVAL_POST_FINISH_DELAY = 30000; //120000
     var await_response_timeout_id, finish_message_timeout_id, reset_chatlog_timeout_id;
     var pending_delivering_messages = [];
+    var indice = 0;
 
     var is_conversation_starting = false;
     // Inicializamos estilos
@@ -27,30 +28,87 @@
     var startingStyle = document.createElement("style");
     var secondStyle = document.createElement("style");
 
-    var chota = function() {
+    var Events = function() {
 
+        $("#chat-circle").click(function() {
+            //Reiniciamos el contador de notificaciones
+            contadorN = 0;
+            $("#chat-circle").toggle('scale');
+            $(".chat-box").toggle('scale');
+            $(".mego-img").toggle('scale');
+            //Eliminamos la notificación
+            $(".badge").remove();
+        })
+
+        $(".chat-box-toggle").click(close_chatbox);
+
+        $("#chat-submit").click(click_submit);
+
+        formButton.addEventListener('click', (event) => {
+            var loader = document.querySelector("#loader");
+            // Cambiamos los estilos
+            changeStyle("second");
+            // Generamos el saludo del usuario en el chat
+            generate_message(SALUDO, "usuario");
+            // Desactivamos loader 
+            loader.classList.remove("active");
+            // Iniciamos el control de inactividad
+            start_inactivity_check();
+            // Desactivamos el inicio de conversación
+            is_conversation_starting = false;
+        });
+
+        startConversation();
+
+        onload = function() {
+            intervalPestaneo();
+        }
     }
 
     var generate_chat = function(responseHTML) {
-        document.body.innerHTML += responseHTML;
 
+        // Creamos la estructura del chat
+        var div_chat_mego = document.createElement("div");
+        div_chat_mego.innerHTML = responseHTML;
+        var chat_body = div_chat_mego.querySelector(".chat-mego");
+
+        // A implementar a futuro
+        var chat_msg = div_chat_mego.querySelector(".chat-msg");
+        var input = div_chat_mego.querySelector("#formInput");
+
+        // Validamos el input prohibiendo pegar y los caracteres (<->)
+        input.addEventListener('keydown', (event) => {
+            var keyName = event.key;
+            input.onpaste = function(event) {
+                event.preventDefault();
+            }
+
+            if (keyName == "<" || keyName == ">") {
+                event.preventDefault();
+                return false;
+            }
+            return true;
+        });
+
+        console.log(chat_msg);
+        document.body.appendChild(chat_body);
+
+        // Pedimos los estilos primarios
         AjaxCall({
             url: CSSFirstUrl,
             method: 'GET',
             callback: saveFirstStyle
         });
 
+        // Pedimos los estilos secundarios
         AjaxCall({
             url: CSSSecondUrl,
             method: 'GET',
             callback: saveSecondStyle
         });
 
-        chota();
+        Events();
     }
-
-    //Capturamos el contenedor del bot
-
 
     // Llamado asíncrono a cualquier función requerida
     var AjaxCall = function({
@@ -87,7 +145,6 @@
     }
 
     function changeStyle(destinationStyle) {
-
         if (destinationStyle == "second") {
             // Ocultamos el boton
             formButton.style.display = 'none';
@@ -321,8 +378,6 @@
         clearTimeout(reset_chatlog_timeout_id);
     };
 
-    var opcionElegida = false;
-
     var disable_options = function(ul) {
         var li_options = ul.querySelectorAll("li");
         li_options.forEach(li => {
@@ -482,36 +537,4 @@
         }
     }
 
-    $("#chat-circle").click(function() {
-        //Reiniciamos el contador de notificaciones
-        contadorN = 0;
-        $("#chat-circle").toggle('scale');
-        $(".chat-box").toggle('scale');
-        $(".mego-img").toggle('scale');
-        //Eliminamos la notificación
-        $(".badge").remove();
-    })
-
-    $(".chat-box-toggle").click(close_chatbox);
-
-    $("#chat-submit").click(click_submit);
-
-    formButton.addEventListener('click', (event) => {
-        var loader = document.querySelector("#loader");
-        // Cambiamos los estilos
-        changeStyle("second");
-        // Generamos el saludo del usuario en el chat
-        generate_message(SALUDO, "usuario");
-        // Desactivamos loader 
-        loader.classList.remove("active");
-        // Iniciamos el control de inactividad
-        start_inactivity_check();
-        // Desactivamos el inicio de conversación
-        is_conversation_starting = false;
-    });
-    startConversation();
-
-    onload = function() {
-        intervalPestaneo();
-    }
 }());
