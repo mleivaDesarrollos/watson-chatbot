@@ -46,6 +46,7 @@ app.post('/authenticate', (req, res) => {
         var firstName = results.users[0].givenName.split(" ")[0];
         var fullName = results.users[0].displayName;
         req.session.username = userData.user;
+        req.session.auth = Buffer.from(userData.user + ":" + userData.pass).toString('base64');
         req.session.firstname = firstName;
         req.session.fullname = fullName;
         req.session.isLogged = true;
@@ -69,16 +70,16 @@ app.get('/logout', (req, res, next) => {
 });
 
 
-// app.use('/login', express.static('./public/login'));
+app.use('/login', express.static('./public/login'));
 
-// app.use(function (req, res, next) {
-//   if (req.session.isLogged) {
-//     next();
-//   }
-//   else {
-//     res.sendFile(path.join(__dirname + '/public/login/login.html'));
-//   }
-// });
+app.use(function (req, res, next) {
+  if (req.session.isLogged) {
+    next();
+  }
+  else {
+    res.sendFile(path.join(__dirname + '/public/login/login.html'));
+  }
+});
 
 app.use('/', express.static('./public'));
 
@@ -96,13 +97,14 @@ app.post('/send', (req, res) => {
   let firstName = req.session.firstname;
   let fullName = req.session.fullname;
   let username = req.session.username;
+  let auth = req.session.auth;  
   // Separamos menssaje
   var message = msgToSend.message;
   var context;
   if(msgToSend.context != undefined) context = JSON.parse(msgToSend.context);
   var chatbot = require('./Chatbot/WatsonIntegration');
   // TODO : Sacar el harcodeado
-  chatbot.message({userInput: message, context: context, firstname: firstName, fullname: fullName,  username: username}).then((messageFromBot) => {
+  chatbot.message({userInput: message, context: context, firstname: firstName, fullname: fullName,  username: username, auth: auth}).then((messageFromBot) => {
       res.json(messageFromBot);
   });
 })
