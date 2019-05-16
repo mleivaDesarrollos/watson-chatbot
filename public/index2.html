@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Documento</title>
+</head>
+<body>
+    <div id="texto">
+        <h1>Ajax</h1>
+        <button id="cambiaContenido">CAMBIALO NEGRITO</button>
+    </div>
+
+    <script>
+        
+        document.querySelector("#cambiaContenido").addEventListener("click",cambiaContenido);
+        
+        function cambiaContenido(){
+            var xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function(){
+                if(this.readyState == 4 && this.status == 200){
+                    document.querySelector("#texto").innerHTML = this.response;
+                }
+            }
+            // .open: especifica la solicitud
+            // - GET/POST: Get tiene un limite de caracteres de 2000
+            // - Archivo : txt, php, xml, json , etc
+            // - true/false : metodo de envio. 
+
+            xhr.open("GET","mego/css/firstStyle.css",true);
+            // .send : Envia la solicitud al servidor.
+            // En caso de utilizar post hay que pasar los datos por parametros
+            xhr.send();
+        };
+        
+
+    </script>
+    </body>
+</html>
