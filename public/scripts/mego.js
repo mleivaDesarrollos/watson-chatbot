@@ -19,16 +19,18 @@
     var indice = 0;
 
     var is_conversation_starting = false;
-    // Inicializamos estilos
 
-    var HTMLMego = "mego/index.html";
+    // Guardamos las URL de los recursos publicos del chat
+    var HTMLMego = "/mego/index.html";
     var CSSFirstUrl = "/mego/css/firstStyle.css";
     var CSSSecondUrl = "/mego/css/secondStyle.css";
 
+    // Creamos estilos
     var startingStyle = document.createElement("style");
     var secondStyle = document.createElement("style");
 
-    var Events = function() {
+    // Funcion encargada de disparar los eventos principales del chat
+    var events = function() {
 
         $("#chat-circle").click(function() {
             //Reiniciamos el contador de notificaciones
@@ -38,7 +40,7 @@
             $(".mego-img").toggle('scale');
             //Eliminamos la notificación
             $(".badge").remove();
-        })
+        });
 
         $(".chat-box-toggle").click(close_chatbox);
 
@@ -58,18 +60,25 @@
             is_conversation_starting = false;
         });
 
-        startConversation();
+        $("#chat-input").click(function() {})
 
-        onload = function() {
-            intervalPestaneo();
-        }
+
+
+        startConversation();
+        intervalPestaneo();
     }
 
+    // Generamos el chat
     var generate_chat = function(responseHTML) {
 
+        var imagenes = ['img/1.png', 'img/2.png'];
         // Creamos la estructura del chat
         var div_chat_mego = document.createElement("div");
         div_chat_mego.innerHTML = responseHTML;
+
+        var div_chat_circle = div_chat_mego.querySelector("#chat-circle");
+        console.log(div_chat_circle);
+
         var chat_body = div_chat_mego.querySelector(".chat-mego");
 
         // A implementar a futuro
@@ -90,7 +99,6 @@
             return true;
         });
 
-        console.log(chat_msg);
         document.body.appendChild(chat_body);
 
         // Pedimos los estilos primarios
@@ -107,7 +115,8 @@
             callback: saveSecondStyle
         });
 
-        Events();
+        // Ejecutamos eventos de apertura y cierre de chat
+        events();
     }
 
     // Llamado asíncrono a cualquier función requerida
@@ -135,6 +144,7 @@
         }
     }
 
+    // Pedimos de manera asincrona los estilos
     var saveFirstStyle = function(respuesta) {
         startingStyle.innerHTML = respuesta;
         document.body.appendChild(startingStyle);
@@ -144,6 +154,7 @@
         secondStyle.innerHTML = respuesta;
     }
 
+    // Funcion para cambiar estilos
     function changeStyle(destinationStyle) {
         if (destinationStyle == "second") {
             // Ocultamos el boton
@@ -166,6 +177,7 @@
         }
     }
 
+    // LLamado asincrono a la funcion generate_chat
     AjaxCall({
         url: HTMLMego,
         method: "GET",
@@ -378,6 +390,7 @@
         clearTimeout(reset_chatlog_timeout_id);
     };
 
+    // Desactivamos las opciones luego de hacer click en ellas
     var disable_options = function(ul) {
         var li_options = ul.querySelectorAll("li");
         li_options.forEach(li => {
@@ -392,6 +405,7 @@
             })
         });
     }
+
 
     var disable_optionsInput = function(ul) {
         var li_options = ul.querySelectorAll("li");
@@ -537,4 +551,14 @@
         }
     }
 
+    var intervalPestaneo = function() {
+        return setInterval(function() {
+            var imagenes = ['img/1.png', 'img/2.png'];
+            var index = Math.floor((Math.random() * imagenes.length));
+            var megoCirculo = document.body.getElementsByClassName("mego-img")[0];
+            var megoCaja = document.body.getElementsByClassName("mego-img-box")[0];
+            megoCirculo.src = imagenes[index];
+            megoCaja.src = imagenes[index];
+        }, 2000);
+    }
 }());
