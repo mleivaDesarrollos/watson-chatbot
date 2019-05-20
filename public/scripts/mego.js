@@ -11,9 +11,9 @@
     const AWAITING_RESPONSE_MESSAGES = ["¿Seguís ahí?", "Te espero "];
     const FINISHING_CHAT_INACTIVITY_MESSAGES = ["Avisame cualquier cosa, yo siempre estoy aqui para cualquier consulta que tengas.", "Cuando tengas tiempo seguimos hablando!"];
     // Todos los tiempos se encuentran en valor milisegundos
-    const INTERVAL_AWAIT_RESPONSE = 30000; //60000
-    const INTERVAL_FINISH_ACTIVITY = 60000; //120000 
-    const INTERVAL_POST_FINISH_DELAY = 30000; //120000
+    const INTERVAL_AWAIT_RESPONSE = 60000; //60000
+    const INTERVAL_FINISH_ACTIVITY = 120000; //120000 
+    const INTERVAL_POST_FINISH_DELAY = 120000; //120000
     var await_response_timeout_id, finish_message_timeout_id, reset_chatlog_timeout_id;
     var pending_delivering_messages = [];
     var indice = 0;
@@ -31,41 +31,18 @@
 
     // Funcion encargada de disparar los eventos principales del chat
     var events = function() {
-
-        $("#chat-circle").click(function() {
-            //Reiniciamos el contador de notificaciones
-            contadorN = 0;
-            $("#chat-circle").toggle('scale');
-            $(".chat-box").toggle('scale');
-            $(".mego-img").toggle('scale');
-            //Eliminamos la notificación
-            $(".badge").remove();
-        });
-
-        $(".chat-box-toggle").click(close_chatbox);
-
-        $("#chat-submit").click(click_submit);
-
-        formButton.addEventListener('click', (event) => {
-            var loader = document.querySelector("#loader");
-            // Cambiamos los estilos
-            changeStyle("second");
-            // Generamos el saludo del usuario en el chat
-            generate_message(SALUDO, "usuario");
-            // Desactivamos loader 
-            loader.classList.remove("active");
-            // Iniciamos el control de inactividad
-            start_inactivity_check();
-            // Desactivamos el inicio de conversación
-            is_conversation_starting = false;
-        });
-
-        $("#chat-input").click(function() {})
-
-
-
+        // Iniciar conversacion
         startConversation();
+        // Pestañeo
         intervalPestaneo();
+        // Abrir chat
+        $("#chat-circle").click(open_chatbox);
+        // Cerrar chat
+        $(".chat-box-toggle").click(close_chatbox);
+        // Enviar mensaje
+        $("#chat-submit").click(click_submit);
+        // Cambiamos estilos del chat
+        $("#formButton").click(changeStyle);
     }
 
     // Generamos el chat
@@ -75,10 +52,7 @@
         // Creamos la estructura del chat
         var div_chat_mego = document.createElement("div");
         div_chat_mego.innerHTML = responseHTML;
-
         var div_chat_circle = div_chat_mego.querySelector("#chat-circle");
-        console.log(div_chat_circle);
-
         var chat_body = div_chat_mego.querySelector(".chat-mego");
 
         // A implementar a futuro
@@ -115,11 +89,12 @@
             callback: saveSecondStyle
         });
 
-        // Ejecutamos eventos de apertura y cierre de chat
+        // Ejecutamos eventos
         events();
     }
 
     // Llamado asíncrono a cualquier función requerida
+
     var AjaxCall = function({
         url,
         method,
@@ -174,6 +149,19 @@
             document.body.removeChild(secondStyle);
             // Aplicamos estilos secundarios
             document.body.appendChild(startingStyle);
+        } else {
+            // Si la funcion viene sin parametros ejecutamos lo siguiente
+            var loader = document.querySelector("#loader");
+            // Cambiamos los estilos
+            changeStyle("second");
+            // Generamos el saludo del usuario en el chat
+            generate_message(SALUDO, "usuario");
+            // Desactivamos loader 
+            loader.classList.remove("active");
+            // Iniciamos el control de inactividad
+            start_inactivity_check();
+            // Desactivamos el inicio de conversación
+            is_conversation_starting = false;
         }
     }
 
@@ -339,6 +327,12 @@
         $(".mego-img").toggle('scale');
         //Eliminamos la notificación
         $(".badge").remove();
+    }
+
+    var open_chatbox = function() {
+        $("#chat-circle").toggle('scale');
+        $(".chat-box").toggle('scale');
+        $(".mego-img").toggle('scale');
     }
 
     var reseting_chat_after_inactivity = function() {
@@ -518,6 +512,7 @@
                 msg_li.innerHTML = option.description;
                 msg_li.actionToRun = option.value;
                 msg_li.style.cursor = "pointer";
+                msg_li.style.textDecoration = "underline";
                 msg_li.addEventListener("click", click_option);
                 contenedorUl.appendChild(msg_li);
             });
