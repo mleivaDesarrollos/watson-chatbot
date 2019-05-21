@@ -14,6 +14,11 @@
     const INTERVAL_AWAIT_RESPONSE = 60000; //60000
     const INTERVAL_FINISH_ACTIVITY = 120000; //120000 
     const INTERVAL_POST_FINISH_DELAY = 120000; //120000
+    // Variables que se utilizaran como recursos publicos
+    var chat_msg_usuario;
+    var chat_msg_bot;
+    var chat_msg_option;
+
     var await_response_timeout_id, finish_message_timeout_id, reset_chatlog_timeout_id;
     var pending_delivering_messages = [];
     var indice = 0;
@@ -21,6 +26,7 @@
     var is_conversation_starting = false;
 
     // Guardamos las URL de los recursos publicos del chat
+
     var HTMLMego = "/mego/index.html";
     var CSSFirstUrl = "/mego/css/firstStyle.css";
     var CSSSecondUrl = "/mego/css/secondStyle.css";
@@ -33,8 +39,8 @@
     var events = function() {
         // Iniciar conversacion
         startConversation();
-        // Pestañeo
-        intervalPestaneo();
+        // Pestañeo y focusin, focusout
+        intervalPestaneoFocus();
         // Abrir chat
         $("#chat-circle").click(open_chatbox);
         // Cerrar chat
@@ -48,16 +54,21 @@
     // Generamos el chat
     var generate_chat = function(responseHTML) {
 
-        var imagenes = ['img/1.png', 'img/2.png'];
-        // Creamos la estructura del chat
         var div_chat_mego = document.createElement("div");
         div_chat_mego.innerHTML = responseHTML;
-        var div_chat_circle = div_chat_mego.querySelector("#chat-circle");
-        var chat_body = div_chat_mego.querySelector(".chat-mego");
 
-        // A implementar a futuro
-        var chat_msg = div_chat_mego.querySelector(".chat-msg");
+        var chat_body = div_chat_mego.querySelector(".chat-mego");
+        // A implementar a futuro        
         var input = div_chat_mego.querySelector("#formInput");
+
+        chat_msg_usuario = div_chat_mego.querySelector(".chat-msg.usuario");
+        chat_msg_bot = div_chat_mego.querySelector(".chat-msg.bot");
+        chat_msg_opcion = div_chat_mego.querySelector(".chat-msg.option");
+
+
+        // console.log(chat_msg_usuario);
+        // console.log(chat_msg_bot);
+        // console.log(chat_msg_opcion);
 
         // Validamos el input prohibiendo pegar y los caracteres (<->)
         input.addEventListener('keydown', (event) => {
@@ -88,7 +99,6 @@
             method: 'GET',
             callback: saveSecondStyle
         });
-
         // Ejecutamos eventos
         events();
     }
@@ -422,113 +432,16 @@
     }
 
     var generate_message = function(msg, type) {
-        // Variable que determina si la conversacion empieza
+
         var conversation_starting = indice > 1;
-        //Aumentamos el indice que representa la cantidad de mensajes que aparecen en pantalla
-        indice++;
-        // Capturamos chat-logs
-        var chat_logs = document.querySelector(".chat-logs");
-        // Creamos elemento cm-msg
-        var cm_msg = document.createElement("div");
-        // Creamos cm-msg-text
-        var cm_msg_text = document.createElement("div");
-        // Definimos elementosdinamicos, segun indice y tipo
-        var id_name = "cm-msg-" + indice;
-        var class_name = "chat-msg " + type;
 
-        // Elementos para el mensaje de tipo opcion
-        var chat_option = document.querySelector(".cm-msg-text-option");
-        var chatbody = document.querySelector(".chat-box-body");
-        var contenedorW100 = document.createElement("div");
-        var contenedorH7 = document.createElement("h7");
-        var contenedorSmall = document.createElement("small");
-        var contenedorEm = document.createElement("em");
-        var contenedorUl = document.createElement("ul");
-
-        var usuario = document.querySelector(".usuario");
-        var bot = document.querySelector(".bot");
-        var option = document.querySelector(".cm-msg-text-option");
-        var input = document.querySelector(".chat-input");
-
-        // Seteamos atributos y clases a cm-msg
-        cm_msg.setAttribute("id", id_name);
-        cm_msg.className = class_name;
-        // Seteamos clases a cm_msg_option
-        if (type == "option") {
-            cm_msg_text.classList.add("cm-msg-text-option");
-        } else {
-            // Seteamos clases a cm_msg_text
-            cm_msg_text.classList.add("cm-msg-text");
-        }
-        if (type != "option") {
-            cm_msg_text.innerHTML = msg;
+        if (type == "bot") {
+            generate_message_bot(msg);
+            $("#chat-submit").prop('disabled', false);
         }
 
         if (type == "usuario") {
-            cm_msg_text.style.borderTopLeftRadius = "0px";
-            if (conversation_starting) {
-                loader.classList.add("active");
-            }
-        }
-
-        if (type == "bot") {
-            cm_msg_text.style.borderBottomRightRadius = "0px";
-            loader.classList.remove("active");
-        }
-
-        // AppendChild de elementos
-        cm_msg.appendChild(cm_msg_text);
-        chat_logs.appendChild(cm_msg);
-        $(id_name).hide().fadeIn(300);
-        // Scroll
-        $(".chat-logs").stop().animate({
-            scrollTop: $(".chat-logs")[0].scrollHeight
-        }, 1000);
-
-        if (type == 'bot') {
-            // Habilitamos el envio de mensaje una vez que llego un mensaje de tipo bot
-            $("#chat-submit").prop('disabled', false);
-        }
-
-        // Creamos elementos para un mensaje de tipo opcion
-        if (type == "option") {
-            // Seteamos clase a ContenedorW100
-            contenedorW100.setAttribute("class", "w-100 justify-content-between");
-            // Seteamos clase al h7
-            contenedorH7.setAttribute("class", "mb-1");
-            // Seteamos clase a UL
-            contenedorUl.setAttribute("class", "opciones");
-
-            loader.classList.remove("active");
-            contenedorH7.innerHTML = msg.text;
-            contenedorEm.innerHTML = msg.description;
-
-            if (msg.description == undefined) {
-                contenedorEm.innerHTML = "<br>";
-            }
-
-            msg.options.forEach(option => {
-                var msg_li = document.createElement('li');
-                msg_li.innerHTML = option.description;
-                msg_li.actionToRun = option.value;
-                msg_li.style.cursor = "pointer";
-                msg_li.style.textDecoration = "underline";
-                msg_li.addEventListener("click", click_option);
-                contenedorUl.appendChild(msg_li);
-            });
-
-            disable_options(contenedorUl);
-            disable_optionsInput(contenedorUl);
-            cm_msg_text.appendChild(contenedorW100);
-            contenedorW100.appendChild(contenedorH7);
-            cm_msg_text.appendChild(contenedorSmall);
-            contenedorSmall.appendChild(contenedorEm);
-            cm_msg_text.appendChild(contenedorUl);
-
-            $("#chat-submit").prop('disabled', false);
-        }
-
-        if (type == 'usuario') {
+            generate_message_usuario(msg);
             // Limpiamos el input
             $("#chat-input").val('');
             if (is_conversation_starting == false) {
@@ -539,21 +452,82 @@
             } else {
                 $("#chat-submit").prop('disabled', false);
             }
+            if (conversation_starting) {
+                loader.classList.add("active");
+            }
         }
+
+        if (type == "opcion") {
+            generate_message_option(msg);
+            loader.classList.remove("active");
+        }
+
+        $(".chat-logs").stop().animate({
+            scrollTop: $(".chat-logs")[0].scrollHeight
+        }, 1000);
 
         if (type == 'bot' || type == 'option') {
             send_stacked_messages();
         }
+
+        indice++;
     }
 
-    var intervalPestaneo = function() {
+    var generate_message_bot = function(message) {
+        var currentMessage = chat_msg_bot;
+        var chat_logs = document.querySelector(".chat-logs");
+        var text = currentMessage.querySelector(".cm-msg-text");
+        currentMessage.id = "cm-msg-" + indice;
+        text.innerHTML = message;
+        chat_logs.appendChild(currentMessage);
+    }
+
+
+    var generate_message_usuario = function(message) {
+        var currentMessage = chat_msg_usuario;
+        var chat_logs = document.querySelector(".chat-logs");
+        var text = currentMessage.querySelector(".cm-msg-text");
+        currentMessage.id = "cm-msg-" + indice;
+        text.innerHTML = message;
+        chat_logs.appendChild(currentMessage);
+    }
+
+    var generate_message_option = function(message) {
+        var currentMessage = chat_msg_option;
+        var chat_logs = document.querySelector(".chat-logs");
+        var text = currentMessage.querySelector(".cm-msg-text");
+        currentMessage.id = "cm-msg-" + indice;
+        text.innerHTML = message;
+        chat_logs.appendChild(currentMessage);
+    }
+
+    // var generate_message_option = function(message) {
+    //     var currentMessage = chat_msg_option.querySelector(".cm-msg-");
+    //     var text = currentMessage.querySelector(".cm-msg-text");
+    //     currentMessage.id = "cm-msg-" + indice;
+    //     text.innerHTML = message;
+    // }
+
+    var intervalPestaneoFocus = function() {
+        var images = ['img/1.png', 'img/2.png'];
+
+        $(".chat-input").focusin(function() {
+            images[0] = "img/3.png";
+            images[1] = "img/3.png";
+        });
+
+        $(".chat-input").focusout(function() {
+            images[0] = "img/1.png";
+            images[1] = "img/2.png";
+        });
+
         return setInterval(function() {
-            var imagenes = ['img/1.png', 'img/2.png'];
-            var index = Math.floor((Math.random() * imagenes.length));
+            var index = Math.floor((Math.random() * images.length));
             var megoCirculo = document.body.getElementsByClassName("mego-img")[0];
             var megoCaja = document.body.getElementsByClassName("mego-img-box")[0];
-            megoCirculo.src = imagenes[index];
-            megoCaja.src = imagenes[index];
+            megoCirculo.src = images[index];
+            megoCaja.src = images[index];
         }, 2000);
     }
+
 }());

@@ -53,7 +53,7 @@
                 iframe.src = "http://work4u.mega.com.ar/";
                 break;
             case '4':
-                iframe.src = "http://corralesviejo.megatech.la:1480/";
+                iframe.src = "http://glpi.mega.com.ar/";
                 break;
             default:
                 iframe.src = "http://vacaciones.mega.com.ar/login"
