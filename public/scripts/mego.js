@@ -58,17 +58,11 @@
         div_chat_mego.innerHTML = responseHTML;
 
         var chat_body = div_chat_mego.querySelector(".chat-mego");
-        // A implementar a futuro        
         var input = div_chat_mego.querySelector("#formInput");
 
         chat_msg_usuario = div_chat_mego.querySelector(".chat-msg.usuario");
         chat_msg_bot = div_chat_mego.querySelector(".chat-msg.bot");
-        chat_msg_opcion = div_chat_mego.querySelector(".chat-msg.option");
-
-
-        // console.log(chat_msg_usuario);
-        // console.log(chat_msg_bot);
-        // console.log(chat_msg_opcion);
+        chat_msg_option = div_chat_mego.querySelector(".chat-msg.option");
 
         // Validamos el input prohibiendo pegar y los caracteres (<->)
         input.addEventListener('keydown', (event) => {
@@ -362,6 +356,7 @@
         // Disponemos al chatbot para que vuelva a iniciar de conversación
         startConversation();
         // Desactivamos el loader
+        loader.display = "none";
     };
 
     var finishing_chat_without_response = function() {
@@ -410,7 +405,6 @@
         });
     }
 
-
     var disable_optionsInput = function(ul) {
         var li_options = ul.querySelectorAll("li");
         var submitButton = document.querySelector("#chat-submit");
@@ -423,8 +417,7 @@
             })
             e.target.removeEventListener("click", disableLi);
         }
-        submitButton.addEventListener("click", disableLi)
-
+        submitButton.addEventListener("click", disableLi);
     }
 
     var click_option = function(e) {
@@ -457,7 +450,8 @@
             }
         }
 
-        if (type == "opcion") {
+        if (type == "option") {
+            $("#chat-submit").prop('disabled', false);
             generate_message_option(msg);
             loader.classList.remove("active");
         }
@@ -474,17 +468,21 @@
     }
 
     var generate_message_bot = function(message) {
-        var currentMessage = chat_msg_bot;
+        var currentMessage = chat_msg_bot.cloneNode(true);
         var chat_logs = document.querySelector(".chat-logs");
         var text = currentMessage.querySelector(".cm-msg-text");
         currentMessage.id = "cm-msg-" + indice;
         text.innerHTML = message;
+        console.log(message);
+        if (message.includes("http")) {
+            console.log("encontre un link");
+        }
         chat_logs.appendChild(currentMessage);
     }
 
 
     var generate_message_usuario = function(message) {
-        var currentMessage = chat_msg_usuario;
+        var currentMessage = chat_msg_usuario.cloneNode(true);
         var chat_logs = document.querySelector(".chat-logs");
         var text = currentMessage.querySelector(".cm-msg-text");
         currentMessage.id = "cm-msg-" + indice;
@@ -493,20 +491,30 @@
     }
 
     var generate_message_option = function(message) {
-        var currentMessage = chat_msg_option;
         var chat_logs = document.querySelector(".chat-logs");
-        var text = currentMessage.querySelector(".cm-msg-text");
+        var currentMessage = chat_msg_option.cloneNode(true);
+        var question = currentMessage.querySelector("#question");
+        var description = currentMessage.querySelector("#description");
+        var options = currentMessage.querySelector("#ulTag");
+        console.log(options);
+
+        question.innerHTML = message.text;
+        description.innerHTML = message.description;
+        message.options.forEach(option => {
+            var msg_li = document.createElement('li');
+            msg_li.innerHTML = option.description;
+            msg_li.actionToRun = option.value;
+            msg_li.style.cursor = "pointer";
+            msg_li.style.textDecoration = "underline";
+            msg_li.addEventListener("click", click_option);
+            options.appendChild(msg_li);
+        });
+
+        disable_options(options);
+        disable_optionsInput(options);
         currentMessage.id = "cm-msg-" + indice;
-        text.innerHTML = message;
         chat_logs.appendChild(currentMessage);
     }
-
-    // var generate_message_option = function(message) {
-    //     var currentMessage = chat_msg_option.querySelector(".cm-msg-");
-    //     var text = currentMessage.querySelector(".cm-msg-text");
-    //     currentMessage.id = "cm-msg-" + indice;
-    //     text.innerHTML = message;
-    // }
 
     var intervalPestaneoFocus = function() {
         var images = ['img/1.png', 'img/2.png'];
