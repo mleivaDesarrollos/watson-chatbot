@@ -425,9 +425,7 @@
     }
 
     var generate_message = function(msg, type) {
-
         var conversation_starting = indice > 1;
-
         if (type == "bot") {
             generate_message_bot(msg);
             $("#chat-submit").prop('disabled', false);
@@ -467,16 +465,49 @@
         indice++;
     }
 
+    var linkDetect = function(message) {
+        var newMessage;
+        const originalString = message;
+        const splitString = originalString.split(" ");
+        for (var i = 0; i < splitString.length; i++) {
+            if (splitString[i].includes("http")) {
+                splitString[i] = '<a href="' + splitString[i] + '" target="_blank">Click aquí</a>';
+            }
+        }
+        newMessage = splitString.join(" ");
+        return newMessage;
+    }
+
+    var reactionDetect = function(message) {
+        const originalString = message;
+        console.log(originalString);
+        //const splitString = originalString.split(" ");
+        var notRecognized = ["no entiendo", "¿como?", "no entendi", "disculpame"];
+        for (let notRecIndex = 0; notRecIndex < notRecognized.length; notRecIndex++) {
+            if (originalString.toLowerCase().includes(notRecognized[notRecIndex])) {
+                console.log("no entendio mego");
+            }
+        }
+        // var notUnderstand = ["No", "entiendo.", "¿Como?", "Repetime.", "Disculpame", "pero", "no", "entendí", "lo", "que", "quisiste", "decirme."];
+        // for (var originalIndex = 0; originalIndex < splitString.length; originalIndex++) {
+        //     for (var notUnderstandIndex = 0; notUnderstandIndex < notUnderstand.length; notUnderstandIndex++) {
+        //         if (splitString[originalIndex].includes(notUnderstand[notUnderstandIndex])) {
+        //             return console.log("no entendio");
+        //         }
+        //     }
+        // }
+    }
+
+
+
     var generate_message_bot = function(message) {
         var currentMessage = chat_msg_bot.cloneNode(true);
         var chat_logs = document.querySelector(".chat-logs");
         var text = currentMessage.querySelector(".cm-msg-text");
+        var messageLink = linkDetect(message);
+        reactionDetect(message);
         currentMessage.id = "cm-msg-" + indice;
-        text.innerHTML = message;
-        console.log(message);
-        if (message.includes("http")) {
-            console.log("encontre un link");
-        }
+        text.innerHTML = messageLink;
         chat_logs.appendChild(currentMessage);
     }
 
@@ -496,7 +527,6 @@
         var question = currentMessage.querySelector("#question");
         var description = currentMessage.querySelector("#description");
         var options = currentMessage.querySelector("#ulTag");
-        console.log(options);
 
         question.innerHTML = message.text;
         description.innerHTML = message.description;
