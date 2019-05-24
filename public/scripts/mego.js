@@ -39,8 +39,8 @@
     var events = function() {
         // Iniciar conversacion
         startConversation();
-        // Pestañeo y focusin, focusout
-        intervalPestaneoFocus();
+        // Pestañeo
+        reactions("intervalPestaneoFocus", " ");
         // Abrir chat
         $("#chat-circle").click(open_chatbox);
         // Cerrar chat
@@ -427,10 +427,9 @@
     }
 
     var generate_message = function(msg, type) {
-
         var conversation_starting = indice > 1;
-
         if (type == "bot") {
+            loader.classList.remove("active");
             generate_message_bot(msg);
             $("#chat-submit").prop('disabled', false);
         }
@@ -469,16 +468,77 @@
         indice++;
     }
 
+    var linkDetect = function(message) {
+        var newMessage;
+        const originalString = message;
+        const splitString = originalString.split(" ");
+        for (var i = 0; i < splitString.length; i++) {
+            if (splitString[i].includes("http")) {
+                splitString[i] = '<a href="' + splitString[i] + '" target="_blank">Click aquí</a>';
+            }
+        }
+        newMessage = splitString.join(" ");
+        return newMessage;
+    }
+
+    var reactions = function(action, message) {
+
+        // ---------------- notRecognized --------------------
+        const originalString = message;
+        var megoCaja = document.body.getElementsByClassName("mego-img-box")[0];
+
+        if (action == "notRecognized") {
+            var notRecognized = {
+                array: ["no entiendo", "¿como?", "no entendi", "disculpame"],
+                image: ["img/noEntiendo.png"]
+            };
+
+            for (let notRecIndex = 0; notRecIndex < notRecognized.array.length; notRecIndex++) {
+                if (originalString.toLowerCase().includes(notRecognized.array[notRecIndex])) {
+                    megoCaja.src = notRecognized.image;
+                }
+            }
+        }
+
+        // --------------- Pestaneo y focus --------------------
+        if (action == "intervalPestaneoFocus") {
+            var intervalPestaneoFocus = {
+                image: ["img/1.png", "img/2.png"],
+                focus: ["img/3.png"]
+            };
+
+            setInterval(function() {
+                var index = Math.floor((Math.random() * intervalPestaneoFocus.image.length));
+                var megoCirculo = document.body.getElementsByClassName("mego-img")[0];
+                var megoCaja = document.body.getElementsByClassName("mego-img-box")[0];
+                megoCirculo.src = intervalPestaneoFocus.image[index];
+                megoCaja.src = intervalPestaneoFocus.image[index];
+
+            }, 2000);
+
+            $(".chat-input").focusin(function() {
+                intervalPestaneoFocus.image[0] = intervalPestaneoFocus.focus[0];
+                intervalPestaneoFocus.image[1] = intervalPestaneoFocus.focus[0];
+            });
+
+            $(".chat-input").focusout(function() {
+                intervalPestaneoFocus.image[0] = "img/1.png";
+                intervalPestaneoFocus.image[1] = "img/2.png";
+            });
+        }
+
+        // ------------------ Agradecimiento ----------------------
+
+    }
+
     var generate_message_bot = function(message) {
         var currentMessage = chat_msg_bot.cloneNode(true);
         var chat_logs = document.querySelector(".chat-logs");
         var text = currentMessage.querySelector(".cm-msg-text");
+        var messageLink = linkDetect(message);
+        reactions("notRecognized", message);
         currentMessage.id = "cm-msg-" + indice;
-        text.innerHTML = message;
-        console.log(message);
-        if (message.includes("http")) {
-            console.log("encontre un link");
-        }
+        text.innerHTML = messageLink;
         chat_logs.appendChild(currentMessage);
     }
 
@@ -498,7 +558,6 @@
         var question = currentMessage.querySelector("#question");
         var description = currentMessage.querySelector("#description");
         var options = currentMessage.querySelector("#ulTag");
-        console.log(options);
 
         question.innerHTML = message.text;
         description.innerHTML = message.description;
@@ -517,27 +576,4 @@
         currentMessage.id = "cm-msg-" + indice;
         chat_logs.appendChild(currentMessage);
     }
-
-    var intervalPestaneoFocus = function() {
-        var images = ['img/1.png', 'img/2.png'];
-
-        $(".chat-input").focusin(function() {
-            images[0] = "img/3.png";
-            images[1] = "img/3.png";
-        });
-
-        $(".chat-input").focusout(function() {
-            images[0] = "img/1.png";
-            images[1] = "img/2.png";
-        });
-
-        return setInterval(function() {
-            var index = Math.floor((Math.random() * images.length));
-            var megoCirculo = document.body.getElementsByClassName("mego-img")[0];
-            var megoCaja = document.body.getElementsByClassName("mego-img-box")[0];
-            megoCirculo.src = images[index];
-            megoCaja.src = images[index];
-        }, 2000);
-    }
-
 }());
