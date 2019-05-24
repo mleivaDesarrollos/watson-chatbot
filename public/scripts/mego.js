@@ -319,7 +319,9 @@
             data: info,
             json: true
         });
+        // Filtro de mensajes para casos especiales, 
         if (_msg == "OTHER_WS") _msg = "Otro equipo diferente";
+        if (_msg == "OTHER_LOCATION") _msg = "Otra ubicación diferente";
         // Generamos mensaje del usuario
         generate_message(_msg, 'usuario');
         //loader.classList.add("active");

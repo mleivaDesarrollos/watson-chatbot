@@ -40,6 +40,12 @@
     const URL_ITILFOLLOWUP = "http://glpi.mega.com.ar/apirest.php/ITILFollowup"
     // URL para cambiar el perfil activo
     const URL_CHANGEACTIVEPROFILE = "http://glpi.mega.com.ar/apirest.php/changeActiveProfile";
+    // URL para obtener las ubicaciones de la empresa
+    const URL_LOCATIONS = "http://glpi.mega.com.ar/apirest.php/location";
+    // URL para obtener información de los usuarios en GLPI
+    const URL_USERS = "http://glpi.mega.com.ar/apirest.php/User";
+    // URL para obtener máquinas
+    const URL_COMPUTER = "http://glpi.mega.com.ar/apirest.php/Computer";
 
 
 // Cargamos la librería request
@@ -126,6 +132,16 @@ function validate_auth({base64_auth} = {}) {
     }
 }
 
+// Desde el auth obtenemos el nombre de usuario
+function get_user_by_auth({base64_auth} = {}) {
+    // Hacemos conversión de Base64 a string
+    let auth_string = Buffer.from(base64_auth, 'base64');
+    // Dividimos el string usando el separador de dos puntos :
+    let authorization_splitted = auth_string.split(":");
+    // Devolvemos el usuario
+    return authorization_splitted[0];
+}
+
 function get_token_headers({s_token} = {}){
     // Copiamos el header base
     let headers = GLPI_BASIC_HEADER;
@@ -135,13 +151,16 @@ function get_token_headers({s_token} = {}){
     return headers;
 }
 
-function get_body_request_new_ticket({tkt_title, tkt_description, tkt_category} = {}){
+function get_body_request_new_ticket({tkt_title, tkt_description, tkt_category, is_req } = {}){
+    // Validamos si en la petición de generación de ticket se solicito
+    var type = is_req == undefined || is_req == false ? 1 : 2;
     // Preparamos el body de envío para la generación de ticket
     let body = {
         input: {
             name: tkt_title,
             content: tkt_description,
-            itilcategories_id: tkt_category
+            itilcategories_id: tkt_category,
+            type: type
         }
     }
     // Devolvemos el objeto procesado en formato string
@@ -303,7 +322,7 @@ function ChangeActiveProfileToEmployee({session_token} = {}){
     return promise;
 }
 
-function CreateTicketOnUserName({session_token, ticket_title, ticket_description, ticket_category } = {}){
+function CreateTicketOnUserName({session_token, ticket_title, ticket_description, ticket_category, is_request } = {}){
     // Disponemos un prefijo para logs
     let ACTION_LOG = "CreateTicketToUser - ";
     let ERROR_LOG = GLPI_ERROR_LOG_PREFIX + ACTION_LOG;
@@ -319,7 +338,7 @@ function CreateTicketOnUserName({session_token, ticket_title, ticket_description
         // Recolectamos el header
         let headers = get_token_headers({s_token: session_token});
         // Preparamos el body de la petición
-        let body = get_body_request_new_ticket({tkt_title: ticket_title, tkt_description: ticket_description, tkt_category: ticket_category});
+        let body = get_body_request_new_ticket({tkt_title: ticket_title, tkt_description: ticket_description, tkt_category: ticket_category, is_req: is_request });
         // Ejecutamos la petición
         request({
             uri: URL_TICKET,
@@ -349,7 +368,7 @@ function CreateTicketOnUserName({session_token, ticket_title, ticket_description
 }
 
 // Del ticket generado obtenemos el id de usuario
-function GetGLPIUserID({session_token, ticket_id} = {}) {
+function GetGLPIUserIDByTicket({session_token, ticket_id} = {}) {
     // Generamos los elemetnos de logs
     let API_LOG = "GetGLPIUserIDTicket - ";
     let ERROR_LOG = GLPI_ERROR_LOG_PREFIX + API_LOG;
@@ -385,6 +404,48 @@ function GetGLPIUserID({session_token, ticket_id} = {}) {
     return promise;
 }
 
+// Con credenciales de MEGO, se realiza consulta en base a un nombre de usuario, obteniendo un ID de resultado
+function GetGLPIUserID({session_token, auth} = {}){
+    // Disponemos las opciones de LOG
+    let ACTION_LOG = "GetGLPIUserID - ";
+    let ERROR_LOG = GLPI_ERROR_LOG_PREFIX + ACTION_LOG;
+    // Preparamos la promesa a procesar
+    let promise = new Promise((resolve, reject) => { 
+        // Validamos si el token fue comunicado -- En este caso el token de MEGO
+        if(session_token == undefined) return reject(log.Register(ERROR_LOG + "Está faltando el token de sesion para poder operar"));
+        // Validamos si el auth fue comunicado
+        if(auth == undefined) return reject(log.Register(ERROR_LOG + "Falta la autorización del usuario para poder chequear el ID"));
+        // Obtenemos el usuario desde el auth
+        let username = get_user_by_auth({base64_auth: auth});
+        // Preparamos el header para la solicitud
+        let headers = get_token_headers({s_token: session_token});
+        // Construimos la url con el nombre de usuario
+        let url = URL_USERS + "?searchText[name]=" + username;
+        // Ejecutamos la request
+        request({
+            url: url,
+            headers: headers,
+            method: "get"
+        }, (error, response, body_response) => { 
+            // Validamos si viene algún error nativo en la libreria
+            if(error) return reject(log.Register(ERROR_LOG + error));
+            // Validamos si la petición vino con un estado correcto
+            if(is_request_ok({statusCode: response.statusCode})) {
+                // Convertimos la respuesta a JSON
+                let users_json = JSON.parse(body_response);
+                // Resolvemos la promesa con el id del usuario
+                resolve(users_json[0].id);
+            } else { 
+                // Devolvemos el error procesado
+                return reject(handle_request_errors(response, ERROR_LOG, session_token));
+            }
+        })
+
+    });
+    // Devolvemos la promesa procesada
+    return promise;
+}
+
 function KillSession({session_token} = {}){
    // Preparamos los datos de log en caso de error
    let ACTION_LOG = "KillSession - ";
@@ -413,6 +474,91 @@ function KillSession({session_token} = {}){
    });
    // Devolvemos la promesa procesada
    return promise; 
+}
+
+// Obtenemos todas las ubicaciones cargadas
+function GetLocations({session_token} = {}){
+    // Definimos las variables de logs
+    let ACTION_LOG = "GetLocations - ";
+    let ERROR_LOG = GLPI_ERROR_LOG_PREFIX + ACTION_LOG;
+    // Preparamos la promesa para devolver
+    let promise = new Promise((resolve, reject) => {
+        // Validamos si el token fue comunicado
+        if(session_token == undefined) return reject(log.Register(ERROR_LOG + "No se comunico token de inicio de sesión."));
+        // Obtenemos los headers para token
+        let headers = get_token_headers({s_token: session_token});
+        // Ejecutamos el request
+        request({
+            url: URL_LOCATIONS,
+            headers: headers,
+            method: 'GET'
+        }, (error, response, body_response) => {
+            // Validamos si viene con errores
+            if(error) return reject(log.Register(ERROR_LOG + error));
+            // Comprobamos que el estado recibido sea el correcto
+            if(is_request_ok({statusCode: response.statusCode})) {
+                // Parseamos las respuestas recibidas a formato JSON
+                let locations_json = JSON.parse(body_response);
+                // Para acumular las ubicaciones finales en devoluciones
+                let locations_return = [];
+                // Disponemos el array de ubicaciones
+                locations_json.forEach(location => {
+                    // Agregamos al objeto de devolución la ubicación
+                    locations_return.push( location.completename );
+                })
+                // Devolvemos los grupos procesados
+                resolve(locations_return);
+            } else { 
+                // Devolvemos el mensaje según la respuesta
+                return reject(handle_request_errors(response, ERROR_LOG, session_token));
+            }
+        })
+    });
+    // Devolvemos la promesa
+    return promise;
+}
+
+function GetWorkstations({session_token, user_id} ={}){
+    // Definimos las variables de log
+    let ACTION_LOG = "GetUserWorkstations - ";
+    let ERROR_LOG = GLPI_ERROR_LOG_PREFIX + ACTION_LOG;
+    // Preparamos una promesa para devolver
+    let promise = new Promise((resolve, reject) => { 
+        // Rechazamos la petición si no hay token
+        if(session_token == undefined) return reject(log.Register(ERROR_LOG + "Falta indicar un token para realizar esta solicitud"));
+        // Preparamos los headers de petición
+        let headers = get_token_headers({s_token : session_token});
+        // Disponemos del url de consulta para PC
+        let url = URL_COMPUTER + "?searchText[users_id]=" + user_id;
+        // Ejecutamos el request
+        request({ 
+            url: url,
+            headers: headers,
+            method: 'GET'
+        }, (error, response, body_response) => { 
+            // Validamos que request no haya enviado error
+            if(error) return reject(log.Register(ERROR_LOG + error));
+            // Validamos el estado en el que haya llegado la respuesta
+            if(is_request_ok({statusCode: response.statusCode})) { 
+                // Parseamos a modo JSON la respuesta
+                let computers_JSON = JSON.parse(body_response);
+                // Disponemos un acumulador para guardar las computadoras
+                let computers_result = [];
+                // Iteramos sobre todos los elementos del JSON recibido
+                computers_JSON.forEach(computer => {
+                    // Agregamos el ID y descripción
+                    computers_result.push({id: computer.id, name: computer.name});
+                });
+                // Resolvemos con el array
+                resolve(computers_result);
+            } else { 
+                // Rechazamos la petición
+                return reject(handle_request_errors(response, ERROR_LOG, token_session));
+            }
+        });
+    });
+    // Devolvemos la promesa procesada
+    return promise;
 }
 
 function GetGroupTicket({session_token, ticket_id} = {}) {
@@ -648,112 +794,15 @@ function CloseTicketByMego({session_token, ticket_id}={}){
     return promise;
 }
 
-var instance = function({user_auth, tkt_title, tkt_description, tkt_category} = {}) {
+module.exports = function({user_auth, tkt_title, tkt_description, tkt_category, is_req} = {}) {
     // Validamos los parametros de entrada
     if(user_auth == undefined) return log.Register(GLPI_ERROR_LOG_PREFIX + "Para generar una instancia de módulo se necesita la autorización en formato usuario:clave en formato base64");
-    if(tkt_title == undefined) return log.Register(GLPI_ERROR_LOG_PREFIX + "Para generar una instancia de módulo se necesita el título de ticket");
-    if(tkt_description == undefined) return log.Register(GLPI_ERROR_LOG_PREFIX + "Para generar una instancia de módulo se necesita la descripción del ticket");
-    if(tkt_category == undefined) return log.Register(GLPI_ERROR_LOG_PREFIX + "Para generar una instancia de módulo se necesita la categoria del ticket");
     // Almacenamos los datos de instancia
     this._user_auth = user_auth;
     this._ticket_title = tkt_title;
     this._ticket_description = tkt_description;
     this._ticket_category = tkt_category;
-    // Disponemos del listado de métodos de la instancia
-
-    //Creación de ticket y devolución de ID
-    this.CreateTicketWithIDAndGroupInfo = function() {
-        // Nos conectamos para obtener el token de GLPI
-        return ConnectGLPIUserAndGetSessionToken({base_64_authorization: this._user_auth}).
-        then(token_id => {
-            // Guardamos el token
-            this._token = token_id;
-            // Llamamos a la instancia de generación de tickets
-            return CreateTicketOnUserName({session_token: this._token, ticket_title: this._ticket_title, ticket_description: this._ticket_description, ticket_category: this._ticket_category});
-        }).
-        then(ticket_id => {
-            // Guardamos el id del ticket
-            this._ticket_id = ticket_id;
-            // Generamos una solicitud para obtener el número de ID del usuario, que servira para otras solicitudes
-            return GetGLPIUserID({session_token: this._token, ticket_id: this._ticket_id});            
-        }).
-        then(user_id => {
-            // Guardamos el ID del usuario
-            this._user_id = user_id;
-            // Preparamos las modificaciones de MEGO sobre GLPI, para lo cual vamos a iniciar session en GLPI
-            return ConnectGLPIUserAndGetSessionToken({base_64_authorization: MEGO_AUTHORIZATION});
-        }).
-        then(token_mego => {
-            // Guardamos el token de mego
-            this._mego_token = token_mego;
-            // Realizamos una consulta sobre el ticket en cuestión para verificar si tiene grupos asignados.
-            return GetGroupTicket({session_token: this._mego_token, ticket_id: this._ticket_id});
-        })
-        .then(assigned_groups => {
-            // Guardamos los grupos en una variable
-            this._assigned_groups = assigned_groups;
-            // En la siguiente petición vamos a realizar una solicitud para registrar a Mego como modificador de tickets
-            return SetMegoOnTicket({session_token: this._mego_token, ticket_id: this._ticket_id});
-        })
-        .catch(error => console.log(error));        
-    }
-
-    this.CreateTicketAndClose = function() {
-        // Procesamos la generación de tickets normal
-        return this.CreateTicketWithIDAndGroupInfo().
-        then(normal_process_completed => {
-            // Procedemos a cargar una solución
-            return SetMegoSolutionAndGetSolutionID({session_token: this._mego_token, ticket_id: this._ticket_id});
-        }).
-        then(solution_id => {
-            // Almacenamos el ID de solución
-            this._solution_id = solution_id;
-            // Procedemos a actualizar la solución
-            return ApproveMegoSolution({session_token: this._mego_token, solution_id: this._solution_id, user_id: this._user_id});
-        }).
-        then(solution_approved => {
-            // Aqui debemos generar un comentario del usuario sobre el FollowUp de GLPI, para dar credibilidad al cierre de ticket
-            return AddCommentApproveSolution({session_token: this._mego_token, ticket_id: this._ticket_id, user_id: this._user_id});
-        }).then(comment_succesfull_added => {
-            // En ultima parte del proceso debemos dar cierre al ticket, utilizando la función API dispuesta procederemos
-            return CloseTicketByMego({session_token: this._mego_token, ticket_id: this._ticket_id});
-        })
-        .then(ticket_successfull_closed => {
-            // Al llegar aqui todas las secuencias del proceso han sido completadas correctamente.
-        }).catch(error => console.log(error));
-    }
-
-    this._clean_instance = function(){        
-        // Validamos si el token de mego viene cargado con información
-        if(this._mego_token){
-            // Matamos la sessión del token en la API
-            KillSession({session_token: this._mego_token}).catch(); // En caso de error el log registrara esta falla );
-            // Destruimos la variable de session
-            delete this["_mego_token"];
-        }    
-        // Validamos si hay token de usuario guardado
-        if(this._token){
-            // Ejecutamos la función para terminar la sesión
-            // TODO: Revisar por que motivo la sessión de token del usuario está finalizada sin haber llamado a KillSession antes
-            // KillSession({session_token: this._token}).then(success => console.log("Session de mego matada")).catch(error => console.log(error));
-            // Destruimos el token almacenado en la variable de instancia
-            delete this["_token"];            
-        }        
-    }    
-    return this;
-}
-
-module.exports = function({user_auth, tkt_title, tkt_description, tkt_category} = {}) {
-    // Validamos los parametros de entrada
-    if(user_auth == undefined) return log.Register(GLPI_ERROR_LOG_PREFIX + "Para generar una instancia de módulo se necesita la autorización en formato usuario:clave en formato base64");
-    if(tkt_title == undefined) return log.Register(GLPI_ERROR_LOG_PREFIX + "Para generar una instancia de módulo se necesita el título de ticket");
-    if(tkt_description == undefined) return log.Register(GLPI_ERROR_LOG_PREFIX + "Para generar una instancia de módulo se necesita la descripción del ticket");
-    if(tkt_category == undefined) return log.Register(GLPI_ERROR_LOG_PREFIX + "Para generar una instancia de módulo se necesita la categoria del ticket");
-    // Almacenamos los datos de instancia
-    this._user_auth = user_auth;
-    this._ticket_title = tkt_title;
-    this._ticket_description = tkt_description;
-    this._ticket_category = tkt_category;
+    this._ticket_request = is_req;
     // Disponemos del listado de métodos de la instancia
 
     //Creación de ticket y devolución de ID
@@ -769,12 +818,12 @@ module.exports = function({user_auth, tkt_title, tkt_description, tkt_category} 
         }).
         then(change_to_employee_success => {
             // Una vez cambiado a empleado ej
-            return CreateTicketOnUserName({session_token: this._token, ticket_title: this._ticket_title, ticket_description: this._ticket_description, ticket_category: this._ticket_category});
+            return CreateTicketOnUserName({session_token: this._token, ticket_title: this._ticket_title, ticket_description: this._ticket_description, ticket_category: this._ticket_category, is_request: this._ticket_request});
         }).
         then(ticket_id => {
             this._ticket_id = ticket_id;
             // Generamos una solicitud para obtener el número de ID del usuario, que servira para otras solicitudes
-            return GetGLPIUserID({session_token: this._token, ticket_id: this._ticket_id});            
+            return GetGLPIUserIDByTicket({session_token: this._token, ticket_id: this._ticket_id});            
         }).
         then(user_id => {
             // Guardamos el ID del usuario
@@ -822,6 +871,15 @@ module.exports = function({user_auth, tkt_title, tkt_description, tkt_category} 
         }).catch(error => console.log(error));
     }
 
+    // Devuelve una promesa con todas las ubicaciones del usuario
+    this._getAllUserLocations = function() {
+        return ConnectGLPIUserAndGetSessionToken({base_64_authorization: this._user_auth})
+        .then(token_id => {
+            // Llamamos a solicitud todas las ubicaciones a las cuales el usuario tenga alcance
+            return GetLocations({session_token: token_id});
+        }).catch(error => console.log(error));
+    }
+
     this._clean_instance = function(){        
         // Validamos si el token de mego viene cargado con información
         if(this._mego_token){
@@ -842,6 +900,10 @@ module.exports = function({user_auth, tkt_title, tkt_description, tkt_category} 
 
     // Método público dispuesto para obtener un ticket nuevo y los grupos asignados
     this.CreateTicketAndRetrieveIDAndGroups = async() =>{
+        // Ejecutamos las validaciones de campos, deben estar cargados titulo, descripcion y categoria para crear un ticket
+        if(this._ticket_title == undefined) return log.Register(GLPI_ERROR_LOG_PREFIX + "Para generar una instancia de módulo se necesita el título de ticket");
+        if(this._ticket_description == undefined) return log.Register(GLPI_ERROR_LOG_PREFIX + "Para generar una instancia de módulo se necesita la descripción del ticket");
+        if(this._ticket_category == undefined) return log.Register(GLPI_ERROR_LOG_PREFIX + "Para generar una instancia de módulo se necesita la categoria del ticket");
         // Preparamos las variables a devolver en el proceso
         let ticket_info = {};
         // Procesamos por los métodos del módulo la solicitud de API
@@ -859,6 +921,10 @@ module.exports = function({user_auth, tkt_title, tkt_description, tkt_category} 
     }
 
     this.CreateTicketAndClose = async() => {
+        // Ejecutamos las validaciones de campos, deben estar cargados titulo, descripcion y categoria para crear un ticket
+        if(this._ticket_title == undefined) return log.Register(GLPI_ERROR_LOG_PREFIX + "Para generar una instancia de módulo se necesita el título de ticket");
+        if(this._ticket_description == undefined) return log.Register(GLPI_ERROR_LOG_PREFIX + "Para generar una instancia de módulo se necesita la descripción del ticket");
+        if(this._ticket_category == undefined) return log.Register(GLPI_ERROR_LOG_PREFIX + "Para generar una instancia de módulo se necesita la categoria del ticket");        
         // Preparamos las variables de ticket a informar
         let ticket_info = {};
         // Ejecutamos la solicitud utilizando los métodos de la API
@@ -873,8 +939,25 @@ module.exports = function({user_auth, tkt_title, tkt_description, tkt_category} 
         // Devolvemos el valor del ticket
         return ticket_info;
     }
+
+    // Método público que devuelve un listado de ubicaciones a las cuales el usuario tiene acceso
+    this.GetAllUsersLocations = async() => {
+        // Variable que se devolverá al final del proceso
+        let user_locations = [];
+        // Ejecutamos la función asincrónica esperando la respuesta
+        await this._getAllUserLocations()
+        .then(locs => user_locations = locs)
+        .catch(error => { return log.Register(GLPI_ERROR_LOG_PREFIX + "Error al obtener el listado de ubicaciones. Verfiicar log para mas información.")} );
+        // Limpiamos instancia
+        this._clean_instance();
+        // Devolvemos la variable procesada
+        return user_locations;
+    }
     return this;
 }
+
+// Unit Test, locations
+// GetLocations({session_token: "vv3ferjkajr81s9e32lp3f6dl4"}).then(locs => console.log(locs));
 
 // Generamos un ticket
 // GLPI.CreateTicketWithIDAndGroupInfo().then(success => {

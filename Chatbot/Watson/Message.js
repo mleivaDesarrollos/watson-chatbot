@@ -22,14 +22,26 @@ const MESSAGE_SHOW_WORKSTATION = {
     description: "Listado de equipos asignados"
 }
 
+// Plantilla de mensaje predefinida para mostrar las ubicaciones
+const MESSAGE_SHOW_LOCATIONS = {
+    type: "option",
+    text: "¿Cual de estás ubicaciones sería donde estarías necesitando el servicio?",
+    description: "Listado de ubicaciones"
+}
+
+// Cuando hay que se hacer carga de otra dirección que no sea las listadas
+const OTHER_LOCATION = { description: "Otra dirección fuera del listado", value: "OTHER_LOCATION"};
+
 const OTHER_WORKSTATION = { description: "Otro equipo fuera del listado", value: "OTHER_WS" };
 
 const GET_TICKET_CONTEXT_DATA = "require_ticket";
 const GET_WORKSTATION_NUMBER = "require_workstation";
+const GET_REQUEST_ALL_USER_LOCATIONS = "require_user_locations";
 const GET_TICKET_PLACEHOLDER = "TICKET_NUMBER";
 
 const CONTEXT_CONVERSATION_ID = "conversation_id";
 const CONTEXT_SYSTEM = "system";
+const CONTEXT_REQUEST = "is_request";
 
 var filter_message_by_type = function ({ message } = {}) {
     // Preparamos el mensaje de respuesta
@@ -82,6 +94,8 @@ var CheckTicketRequestAndGenerateTicketNumber = async ({ caller_context, filtere
         var title;
         // Disponemos una variable para el código de categoría
         var category;
+        // Disponemos una variable que este disponible en caso de solicitud
+        var request;
         // Iteramos sobre los elementos del contexto
         for (var property in caller_context) {
             // Validamos si la propiedad son las bases
@@ -97,6 +111,12 @@ var CheckTicketRequestAndGenerateTicketNumber = async ({ caller_context, filtere
             else if (property.toLowerCase().includes("categoria")) {
                 // Guardamos el contexto en la variable
                 category = caller_context[property];
+            } else if (property.toLowerCase().includes(CONTEXT_REQUEST)) {                
+                // Si la propiedad viene con valor true
+                if(caller_context[property] == true){
+                    // En este caso necesitamos que el ticket se cargue como solicitud
+                    request = true;
+                }
             } else {
                 // Preparamos la descripción del tipo de dato a agregar al ticket
                 var label = property.replace(/_/g, " ");
@@ -113,7 +133,7 @@ var CheckTicketRequestAndGenerateTicketNumber = async ({ caller_context, filtere
             // Generamos un nuevo ticket usando GLPI
             var GLPIClass = require('../../Ticket/GLPI');
             // Instanciamos un nuevo objeto GLPI
-            var GLPI = new GLPIClass({user_auth: authorization, tkt_title: title, tkt_description: description, tkt_category: category});
+            var GLPI = new GLPIClass({user_auth: authorization, tkt_title: title, tkt_description: description, tkt_category: category, is_req: request});
             // Solicitamos la generación de tickets
             await GLPI.CreateTicketAndRetrieveIDAndGroups().then(ticket_result => {
                 // Guardamos las variables recibidas
@@ -221,6 +241,51 @@ var CheckWorkstationRequirementAndRetrieveMessageWithWorkstationList = async ({ 
     }
     // Devolvemos el listado de mensajes procesados
     return filtered_messages;
+}
+
+var retrieveUserLocationListOnContextRequest = async({ caller_context, authorization, filtered_messages }) => {
+    // Verificamos si existe la propiedad que se dispone para pedir todas las ubicaciones
+    let require_user_locations = caller_context.hasOwnProperty(GET_REQUEST_ALL_USER_LOCATIONS);
+    // Validamos si está definido esta variable, para proceder a contactar a la herramienta de tickets para pedir ubicaciones
+    if(require_user_locations) {
+        // Eliminamos la propiedad para que en proximas solicitudes no vuelva a ingresar
+        delete caller_context[GET_REQUEST_ALL_USER_LOCATIONS];
+        // Disponemos de la variable de ubicaciones
+        let user_locs = [];
+        // Generamos una nueva instancia de clase GLPI requiriendo la libreria
+        let GLPIClass = require('../../Ticket/GLPI');
+        // Generamos una nueva instancia de clase para hacer uso de los metodos del módulo
+        let GLPI = new GLPIClass({user_auth: authorization});
+        // Disponemos el array donde guardaremos las opciones procesadas
+        let options_for_message = [];
+        // Generamos la solicitud esperando a que finalice
+        await GLPI.GetAllUsersLocations().then(locs => {
+            user_locs = locs;
+        });
+        // Hacemos una copia del template de mensaje de tipo opcion con ubicaciones
+        let message_with_locations = MESSAGE_SHOW_LOCATIONS;
+        // Iteramos sobre las ubicaciones que nos devolvió GLPI
+        user_locs.forEach(location => {
+            // Generamos una nueva opción
+            let option = {
+                description: location,
+                value: location
+            };
+            // Agregamos las opciones al listado
+            options_for_message.push(option);
+        });
+        // Para dejar al usuario la posibilidad de cargue una ubicación fuera del listado
+        options_for_message.push(OTHER_LOCATION);
+        // Agregamos las opciones
+        message_with_locations.options = options_for_message;
+        // Agregamos el mensaje al listado de mensajes filtrados
+        filtered_messages.push(message_with_locations);
+    }
+    // Devolvemos todos los mensajes filtrados
+    return {
+        context: caller_context,
+        messages: filtered_messages
+    }
 }
 
 var CheckUserSendingWorkstationAndGetLocation = async ({ caller_context, username, workstation_name }) => {
@@ -359,6 +424,8 @@ module.exports = function ({ param_workspace, param_version, param_headers, para
                     processed_response = await CheckTicketRequestAndGenerateTicketNumber({ caller_context: context, username: this._username, fullname: this._fullname, filtered_messages: arrMessages, authorization: this._auth });
                     // Validamos si dentro del contexto llega una solicitud
                     arrMessages = await CheckWorkstationRequirementAndRetrieveMessageWithWorkstationList({ caller_context: context, username: this._username, filtered_messages: arrMessages });
+                    // Validamos si dentro del contexto llega una solicitud pidiendo todas las ubicaciones del usuario
+                    processed_response = await retrieveUserLocationListOnContextRequest({ caller_context: context, authorization: this._auth, filtered_messages: arrMessages});
                     // Validamos si la solicitud tiene un requerimiento de reinicio
                     context = CheckAndRestartChat({caller_context: context});
                     // Resolvemos la promise                
