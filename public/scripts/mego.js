@@ -49,8 +49,6 @@
         $("#chat-submit").click(click_submit);
         // Cambiamos estilos del chat
         $("#formButton").click(changeStyle);
-        // Saltar 
-        window.addEventListener('keyup', jump);
     }
 
     // Generamos el chat
