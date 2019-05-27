@@ -488,7 +488,7 @@
 
         if (action == "notRecognized") {
             var notRecognized = {
-                array: ["no entiendo", "¿como?", "no entendi", "disculpame"],
+                array: ["no entiendo", "¿como?", "no entendi", "disculpame", "¡Perfecto!"],
                 image: ["img/noEntiendo.png"]
             };
 
