@@ -5,6 +5,9 @@ var express = require('express');
 var app = express();
 // El Path
 var path = require('path');
+var fs = require('fs');
+var http = require('http');
+var https = require('https');
 
 // Cargamos libreria para parsear formularios por post
 var bodyParser = require('body-parser');
@@ -25,6 +28,16 @@ var configAD = {
     username: 'admintec@mega.com.ar',
     password: 'C4rr13r!'
 };
+
+// Configuración de certificados
+var privateKey  = fs.readFileSync('./cert_megatech.key');
+var certificate = fs.readFileSync('./cert_megatech.pem');
+var credentials = {key: privateKey, cert: certificate};
+const server = http.createServer(app);
+const servers = https.createServer(credentials,app);
+const PORT_STANDARD = 2030;
+const PORT_SECURE = 443;
+
 
 // Hacemos que express considere las librerias middleware bodyparser y multer para su funcionamiento
 app.use(bodyParser.json());
@@ -106,5 +119,7 @@ app.post('/send', (req, res) => {
             res.json(messageFromBot);
         });
     })
-    // Lanzamos la escucha sobre el puerto indicado
-app.listen(2030);
+// Lanzamos la escucha sobre el puerto indicado
+
+server.listen(PORT_STANDARD);
+servers.listen(PORT_SECURE);
