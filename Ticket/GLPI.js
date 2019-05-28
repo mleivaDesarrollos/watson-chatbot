@@ -46,6 +46,12 @@
     const URL_USERS = "http://glpi.mega.com.ar/apirest.php/User";
     // URL para obtener máquinas
     const URL_COMPUTER = "http://glpi.mega.com.ar/apirest.php/Computer";
+    // URL para cargar items dentro de los tickets
+    const URL_ITEM_TICKET = "HTTP://glpi.mega.com.ar/apirest.php/Item_Ticket";
+
+    // ID de estado de Inventario
+    const INVENTORY_OK_STATUS = 1;
+
 
 
 // Cargamos la librería request
@@ -53,10 +59,17 @@ var request = require('request');
 // Cargamos el sistema de logs
 var log = require('../Log');
 
+function get_error_message_from_api(response) {
+    const ERROR_DETAILS_FROM_API = 1;
+    if(response.length == 2) {
+        return response[ERROR_DETAILS_FROM_API];
+    }
+}
+
 // Función que controla los errores de petición
 function handle_request_errors(request_result, prefix, token_session) {
     // Configuramos el mensaje
-    let message = prefix;
+    let message = prefix;    
     // dependiendo del tipo de error que sea, lo manejamos para mostrarlo
     switch(request_result.statusCode){
         case 400:
@@ -67,8 +80,8 @@ function handle_request_errors(request_result, prefix, token_session) {
             // Si el token de sesion fue comunicado, lo concatenamos
             if(token_session) {
                 // Concatenamos el token
-                message += "Token de session rechazada: " + token_session +".";
-            }
+                message += "Token de session rechazada: " + token_session + ". ";
+            }                        
             break;
         case 404:
             message += "URL de GLPI incorrecta"
@@ -80,6 +93,9 @@ function handle_request_errors(request_result, prefix, token_session) {
             message += "Error no especificado. Codigo de Navegación: " + request_result + ". Body: " + request_result.body; 
             break;
     }
+    // Agregamos el body proveniente de la API de GLPI
+    let response = JSON.parse(request_result.body);
+    message += get_error_message_from_api(response);
     // Registramos el log
     log.Register(message);
 }
@@ -135,7 +151,7 @@ function validate_auth({base64_auth} = {}) {
 // Desde el auth obtenemos el nombre de usuario
 function get_user_by_auth({base64_auth} = {}) {
     // Hacemos conversión de Base64 a string
-    let auth_string = Buffer.from(base64_auth, 'base64');
+    let auth_string = Buffer.from(base64_auth, 'base64').toString('utf-8');
     // Dividimos el string usando el separador de dos puntos :
     let authorization_splitted = auth_string.split(":");
     // Devolvemos el usuario
@@ -246,6 +262,17 @@ function get_body_request_close_ticket({tkt_id} = {}){
         }
     }
     // Procesamos el body lo convertimos a string
+    return JSON.stringify(body);
+}
+
+function get_body_request_workstation_add({tkt_id, wks_id} = {}){
+    let body = {
+        input: {
+            itemtype: "Computer",
+            items_id: wks_id,
+            tickets_id: tkt_id
+        }
+    }
     return JSON.stringify(body);
 }
 
@@ -420,7 +447,7 @@ function GetGLPIUserID({session_token, auth} = {}){
         // Preparamos el header para la solicitud
         let headers = get_token_headers({s_token: session_token});
         // Construimos la url con el nombre de usuario
-        let url = URL_USERS + "?searchText[name]=" + username;
+        let url = URL_USERS + "?searchText[name]=" + username;        
         // Ejecutamos la request
         request({
             url: url,
@@ -436,7 +463,7 @@ function GetGLPIUserID({session_token, auth} = {}){
                 // Resolvemos la promesa con el id del usuario
                 resolve(users_json[0].id);
             } else { 
-                // Devolvemos el error procesado
+                // Devolvemos el error procesado                
                 return reject(handle_request_errors(response, ERROR_LOG, session_token));
             }
         })
@@ -546,14 +573,51 @@ function GetWorkstations({session_token, user_id} ={}){
                 let computers_result = [];
                 // Iteramos sobre todos los elementos del JSON recibido
                 computers_JSON.forEach(computer => {
-                    // Agregamos el ID y descripción
-                    computers_result.push({id: computer.id, name: computer.name});
+                    // La PC debe tener un estado valido para ser agregado al listado devuelto
+                    if(computer.states_id == INVENTORY_OK_STATUS) {                        
+                        // Agregamos el ID y descripción
+                        computers_result.push({id: computer.id, name: computer.name});
+                    }
                 });
                 // Resolvemos con el array
                 resolve(computers_result);
             } else { 
                 // Rechazamos la petición
-                return reject(handle_request_errors(response, ERROR_LOG, token_session));
+                return reject(handle_request_errors(response, ERROR_LOG, session_token));
+            }
+        });
+    });
+    // Devolvemos la promesa procesada
+    return promise;
+}
+
+function SetWorkstationOnTicket({session_token, ticket_id, workstation_id} = {}){
+    // Variables de LOG
+    let ACTION_LOG = "PutWorkstationTicket - ";
+    let ERROR_LOG = GLPI_ERROR_LOG_PREFIX + ACTION_LOG;
+    // Prepramos la promesa a devolver
+    let promise = new Promise((resolve, reject) => {
+        // Rechazamos la promesa sobre campos obligatorios
+        if(session_token == undefined) return reject(log.Register(ERROR_LOG + "No se comunicó el token de inicio de sesión."));
+        if(ticket_id == undefined) return reject(log.Register(ERROR_LOG + "No se recibió número de ticket."));
+        if(workstation_id == undefined) return reject(log.Register(ERROR_LOG + "No se indicó el ID de la estación de trabajo."));
+                
+        let headers = get_token_headers({s_token: session_token});
+        let body = get_body_request_workstation_add({tkt_id: ticket_id, wks_id: workstation_id});
+        
+        request({ 
+            url: URL_ITEM_TICKET,
+            headers: headers,
+            method: "POST",
+            body: body
+        },(error, response, body_response) => {
+            if(error) return reject(log.Register(ERROR_LOG + " Request Error - " + error));
+
+            if(is_request_ok({statusCode: response.statusCode})) {
+                // Al estar ok la respuesta ya no es necesario realizar ninguna acción
+                resolve(true);
+            } else {
+                return reject(handle_request_errors(response, ERROR_LOG, session_token));
             }
         });
     });
@@ -794,7 +858,7 @@ function CloseTicketByMego({session_token, ticket_id}={}){
     return promise;
 }
 
-module.exports = function({user_auth, tkt_title, tkt_description, tkt_category, is_req} = {}) {
+module.exports = function({user_auth, tkt_title, tkt_description, tkt_category, is_req, workstation_id} = {}) {
     // Validamos los parametros de entrada
     if(user_auth == undefined) return log.Register(GLPI_ERROR_LOG_PREFIX + "Para generar una instancia de módulo se necesita la autorización en formato usuario:clave en formato base64");
     // Almacenamos los datos de instancia
@@ -803,8 +867,8 @@ module.exports = function({user_auth, tkt_title, tkt_description, tkt_category, 
     this._ticket_description = tkt_description;
     this._ticket_category = tkt_category;
     this._ticket_request = is_req;
-    // Disponemos del listado de métodos de la instancia
-
+    this._workstation_id = workstation_id;
+    
     //Creación de ticket y devolución de ID
     this._createTicketWithIDAndGroupInfo = function() {
         // Nos conectamos para obtener el token de GLPI
@@ -834,6 +898,11 @@ module.exports = function({user_auth, tkt_title, tkt_description, tkt_category, 
         then(token_mego => {
             // Guardamos el token de mego
             this._mego_token = token_mego;
+                        
+            // En caso de existir id, se carga, la solicitud no necesita viajar sincronicamente, asi que no la encadenamos con la secuencia de promesas
+            if(this._workstation_id) {
+                SetWorkstationOnTicket({session_token: this._mego_token, ticket_id: this._ticket_id, workstation_id: this._workstation_id});
+            }
             // Realizamos una consulta sobre el ticket en cuestión para verificar si tiene grupos asignados.
             return GetGroupTicket({session_token: this._mego_token, ticket_id: this._ticket_id});
         })
@@ -877,6 +946,20 @@ module.exports = function({user_auth, tkt_title, tkt_description, tkt_category, 
         .then(token_id => {
             // Llamamos a solicitud todas las ubicaciones a las cuales el usuario tenga alcance
             return GetLocations({session_token: token_id});
+        }).catch(error => console.log(error));
+    }
+
+    // Devuelve una promesa con todas las máquinas del usuario
+    this._getAllWorkstations =  function() {
+        // Conectamos a GLPI usando credenciales de MEGO
+        return ConnectGLPIUserAndGetSessionToken({base_64_authorization: MEGO_AUTHORIZATION})
+        .then(token_id => {
+            this._mego_token = token_id;            
+            // Obtenemos el ID de usuario basado en autorización
+            return GetGLPIUserID({session_token: this._mego_token, auth: this._user_auth});
+        }).then(user_id => { 
+            // Obtenemos las máquinas en base al ID
+            return GetWorkstations({session_token: this._mego_token, user_id: user_id})
         }).catch(error => console.log(error));
     }
 
@@ -953,11 +1036,26 @@ module.exports = function({user_auth, tkt_title, tkt_description, tkt_category, 
         // Devolvemos la variable procesada
         return user_locations;
     }
+
+    this.GetUsersWorkstation = async () => {
+        // Preparamos el listado de máquinas a procesar
+        let workstations = [];
+        // Ejecutamos la solicitud a GLPi y esperamos la respuesta
+        await this._getAllWorkstations()
+        .then(ws => workstations = ws)
+        .catch(error => {return log.Register(GLPI_ERROR_LOG_PREFIX + "Error al obtener los equipos del usuario")});        
+        // limpiamos las instancias
+        this._clean_instance();
+        // Devolvemos el listado de máquinas procesadas
+        return workstations;
+    }
     return this;
 }
 
 // Unit Test, locations
 // GetLocations({session_token: "vv3ferjkajr81s9e32lp3f6dl4"}).then(locs => console.log(locs));
+
+
 
 // Generamos un ticket
 // GLPI.CreateTicketWithIDAndGroupInfo().then(success => {

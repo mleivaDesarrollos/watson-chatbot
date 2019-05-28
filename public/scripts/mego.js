@@ -187,8 +187,7 @@
 
             if (indice == 0) {
                 await_time_ms = 0;
-            }
-            //console.log(pending_delivering_messages[0]);
+            }            
             // Obtenemos el primer mensaje en la cola de mensajes
             var message = pending_delivering_messages[0];
             // Removemos el elemento del arreglo
@@ -272,15 +271,20 @@
         send_message_api();
     }
 
-    var send_message_api = function(option_value) {
-        var _msg;
-        if (option_value == undefined) {
-            _msg = $("#chat-input").val();
-            if (_msg.trim() == '') {
+    var send_message_api = function(option_display, option_value) {
+        let _msg_value;
+        let _msg_display;
+        if (option_display == undefined) {
+            // En el caso de ser mensaje standard, el valor y el mostrado son lo mismo
+            _msg_display = $("#chat-input").val();
+            _msg_value = _msg_display;
+            if (_msg_display.trim() == '') {
                 return false;
             }
         } else {
-            _msg = option_value;
+            // En el caso de los mensajes tipo opción el valor y el mostrado viajan por caminos difernetes
+            _msg_value = option_value;
+            _msg_display = option_display;            
         }
         // Validamos si existe el contexto
         let inpContext = document.querySelector(CONTEXT_DATA);
@@ -295,8 +299,13 @@
             if (JSONcontext.require_workstation) {
                 // Eliminamos la propiedad
                 delete JSONcontext.require_workstation;
-                // Establecemos propiedad en el contexto que indique que estamos devolviendo una terminal en respuesta
-                JSONcontext.sending_workstation = "true";
+                // Para que en la carga sobre GLPI haya un ID vinculado a la terminal, se carga en el contexto
+                JSONcontext.terminal_id = _msg_value;
+                JSONcontext.Nombre_de_equipo = _msg_display;
+                // Para que Watson reciba el nombre de máquina literal y no muestre un número, el display en este caso unico es lo mismo que el value
+                if(_msg_value != "OTHER_WS"){
+                    _msg_value = _msg_display;
+                }                
             }
             if (JSONcontext.require_address) {
                 // Configuramos la propiedad de envio de dirección
@@ -308,10 +317,10 @@
         }
         // Preparamos los datos para enviar
         var info = {
-                message: _msg,
+                message: _msg_value,
                 context: contextValue
             }
-            // Preparamos la solicitud ajax para hacer el envío de información
+        // Preparamos la solicitud ajax para hacer el envío de información        
         AjaxCall({
             url: CHATBOT_URL,
             method: CHATBOT_HTTPMETHOD,
@@ -319,11 +328,8 @@
             data: info,
             json: true
         });
-        // Filtro de mensajes para casos especiales, 
-        if (_msg == "OTHER_WS") _msg = "Otro equipo diferente";
-        if (_msg == "OTHER_LOCATION") _msg = "Otra ubicación diferente";
         // Generamos mensaje del usuario
-        generate_message(_msg, 'usuario');
+        generate_message(_msg_display, 'usuario');
         //loader.classList.add("active");
     }
 
@@ -423,7 +429,7 @@
     }
 
     var click_option = function(e) {
-        send_message_api(e.target.actionToRun);
+        send_message_api(e.target.displayText, e.target.valueText);
     }
 
     var generate_message = function(msg, type) {
@@ -564,7 +570,8 @@
         message.options.forEach(option => {
             var msg_li = document.createElement('li');
             msg_li.innerHTML = option.description;
-            msg_li.actionToRun = option.value;
+            msg_li.displayText = option.description;
+            msg_li.valueText = option.value;
             msg_li.style.cursor = "pointer";
             msg_li.style.textDecoration = "underline";
             msg_li.addEventListener("click", click_option);
