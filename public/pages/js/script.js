@@ -44,17 +44,23 @@
     function cambiarURL(id) {
         switch (id) {
             case '1':
-                iframe.src = "https://portal.megatech.la:2443/";
+                iframe.src = "http://rrhhnews.mega.com.ar";
                 break;
             case '2':
-                iframe.src = "https://portal.megatech.la:4065/tree/documentos.aspx";
+                iframe.src = "https://portal.megatech.la:2443/";
                 break;
             case '3':
-                iframe.src = "http://work4u.mega.com.ar/";
+                iframe.src = "https://portal.megatech.la:4065/tmc";
                 break;
             case '4':
-                iframe.src = "http://glpi.mega.com.ar/";
+                iframe.src = "https://portal.megatech.la:4065/tree/documentos.aspx";
                 break;
+            case '5':
+                iframe.src = "http://work4u.mega.com.ar";
+                break;
+                // case '6':
+                //     iframe.src = "http://glpi.mega.com.ar/";
+                //     break;
             default:
                 iframe.src = "http://vacaciones.mega.com.ar/login"
                 break;

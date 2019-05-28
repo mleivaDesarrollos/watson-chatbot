@@ -422,6 +422,7 @@
                 li_brothers.removeEventListener("click", click_option);
                 li_brothers.style.color = "lightgrey";
                 li_brothers.style.cursor = "no-drop";
+
             })
             e.target.removeEventListener("click", disableLi);
         }
@@ -495,13 +496,43 @@
 
         if (action == "notRecognized") {
             var notRecognized = {
-                array: ["no entiendo", "¿como?", "no entendi", "disculpame"],
+                array: ["no entiendo", "¿como?", "no entendi", "disculpame", "¡Perfecto!"],
                 image: ["img/noEntiendo.png"]
             };
 
             for (let notRecIndex = 0; notRecIndex < notRecognized.array.length; notRecIndex++) {
                 if (originalString.toLowerCase().includes(notRecognized.array[notRecIndex])) {
                     megoCaja.src = notRecognized.image;
+                }
+            }
+        }
+
+        // ------------------ Agradecimiento ----------------------
+
+        if (action == "gratitude") {
+            var gratitude = {
+                array: ["estoy para ayudarte.", "de nada", "lindo"],
+                image: ["img/agradecimiento.png"]
+            };
+
+            for (let notRecIndex = 0; notRecIndex < gratitude.array.length; notRecIndex++) {
+                if (originalString.toLowerCase().includes(gratitude.array[notRecIndex])) {
+                    megoCaja.src = gratitude.image;
+                }
+            }
+        }
+
+        // ------------------ Insultos ----------------------
+
+        if (action == "insult") {
+            var insult = {
+                array: ["respeto", "malas palabras", "contestar insultos"],
+                image: ["img/insultos.png"]
+            };
+
+            for (let notRecIndex = 0; notRecIndex < insult.array.length; notRecIndex++) {
+                if (originalString.toLowerCase().includes(insult.array[notRecIndex])) {
+                    megoCaja.src = insult.image;
                 }
             }
         }
@@ -532,9 +563,6 @@
                 intervalPestaneoFocus.image[1] = "img/2.png";
             });
         }
-
-        // ------------------ Agradecimiento ----------------------
-
     }
 
     var generate_message_bot = function(message) {
@@ -542,7 +570,9 @@
         var chat_logs = document.querySelector(".chat-logs");
         var text = currentMessage.querySelector(".cm-msg-text");
         var messageLink = linkDetect(message);
+        reactions("gratitude", message);
         reactions("notRecognized", message);
+        reactions("insult", message);
         currentMessage.id = "cm-msg-" + indice;
         text.innerHTML = messageLink;
         chat_logs.appendChild(currentMessage);
@@ -553,6 +583,7 @@
         var currentMessage = chat_msg_usuario.cloneNode(true);
         var chat_logs = document.querySelector(".chat-logs");
         var text = currentMessage.querySelector(".cm-msg-text");
+        reactions("gratitude", message);
         currentMessage.id = "cm-msg-" + indice;
         text.innerHTML = message;
         chat_logs.appendChild(currentMessage);
@@ -564,6 +595,7 @@
         var question = currentMessage.querySelector("#question");
         var description = currentMessage.querySelector("#description");
         var options = currentMessage.querySelector("#ulTag");
+        var chat_msg = currentMessage.querySelector(".cm-msg-text-option");
 
         question.innerHTML = message.text;
         description.innerHTML = message.description;

@@ -95,7 +95,7 @@
     position: relative;
     height: 370px;
     height: auto;
-    overflow: hidden
+    overflow: hidden;
 }
 
 .chat-box-body:after {

@@ -1,18 +1,19 @@
 @font-face {
     font-family: nuevoPortal;
     src: url(../fonts/NUEVOPORTAL.ttf);
-  }
+}
 
 @font-face {
     font-family: Gothics;
     src: url(../fonts/GOTHICB.TTF)
 }
+
 html {
     font-family: 'Roboto';
     font-weight: 400;
 }
 
-body {    
+body {
     max-width: 100vw !important;
     height: 100% !important;
     background-image: url('../img/Recurso1.png');
@@ -22,51 +23,49 @@ body {
     background-size: cover;
 }
 
-.portal-accesos{
+.portal-accesos {
     font-weight: 100;
-    color:white;
+    color: white;
 }
 
-.portal-accesos:hover{
+.portal-accesos:hover {
     font-weight: 200;
-    color:black;    
+    color: black;
 }
 
-
-
-
-
-a, a:hover, a:focus, a:active {
+a,
+a:hover,
+a:focus,
+a:active {
     text-decoration: none;
 }
 
 .icono-acceso {
     padding: 20px;
-    border-radius:60px;
+    border-radius: 60px;
     font-family: nuevoPortal !important;
-    color: rgba(255, 255, 255, 1);  
+    color: rgba(255, 255, 255, 1);
     font-size: 5em;
 }
-
-
 
 .icono-acceso:hover {
     transition: 500ms;
     color: #c8591d;
     border-radius: 60px;
     background-color: white;
-    border:2px;
+    border: 2px;
 }
 
 .wrapper-span {
     margin-bottom: 10px !important;
+    margin-left: 5px;
 }
 
-.wrapper-accesos{
-    margin-top:50px;
+.wrapper-accesos {
+    margin-top: 50px;
 }
 
-.container-fluid{
+.container-fluid {
     padding-left: 0px !important;
 }
 
@@ -76,6 +75,7 @@ a, a:hover, a:focus, a:active {
     border-radius: 25px;
     background-color: #c8591d;
 }
+
 #btnDeslogear {
     text-decoration: none;
     color: white;
@@ -86,43 +86,49 @@ a, a:hover, a:focus, a:active {
     color: white;
 }
 
-.wrapper-aplicacion {
-    vertical-align: middle !important;
-}
-
 .texto-acceso {
     color: white;
 }
 
 .fila-accesos {
-    margin-top: 20px;
+    margin-top: 4px;
 }
 
 .jumbotron {
-    margin-top: 7rem !important;
+    margin-top: 3% !important;
     padding-bottom: 1rem !important;
     padding-top: 1rem !important;
     margin-bottom: 1rem !important;
 }
+
+.img-custom {
+    max-width: 369px;
+}
+
 #wrapper-saludo {
     background-color: rgba(0, 0, 0, 0.3);
-    margin-top:1px;
     font-size: 25px;
     border-bottom-left-radius: 20px;
     border-bottom-right-radius: 20px;
     max-height: 70px;
-    
 }
+
 #wrapper-texto {
-    align-items: center  !important;
+    align-items: center !important;
     padding-top: 15px;
 }
-.saludo{
+
+#wrapper-main {
+    max-width: fit-content;
+}
+
+.saludo {
     font-size: 1.25em;
     display: inline-block !important;
-    padding-right: 5px;    
+    padding-right: 5px;
     margin-bottom: 0px !important;
 }
+
 #logout-img {
     display: inline-block !important;
     max-width: 30px;
