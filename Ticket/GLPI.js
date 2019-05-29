@@ -10,6 +10,8 @@
 */
 
 // Disponemos de constantes de aplicación
+    // URL de GLPI
+    const URL_GLPI = "http://10.3.1.33";
     // Prefijo de error
     const GLPI_ERROR_LOG_PREFIX = "Error: GLPi - ";
     // Clave y usuario de MEGO
@@ -25,29 +27,29 @@
     // Al utilizar el header y querer modificarlo, realizar un clonado
     const GLPI_BASIC_HEADER = {"Content-Type" : "application/json"};
     // URL para solicitar inicio de Sessión
-    const URL_INITSESSION = "http://glpi.mega.com.ar/apirest.php/initSession";
+    const URL_INITSESSION = URL_GLPI + "/apirest.php/initSession";
     // URL para Crear u Obtener ticket
-    const URL_TICKET = "http://glpi.mega.com.ar/apirest.php/Ticket";
+    const URL_TICKET = URL_GLPI + "/apirest.php/Ticket";
     // URL para finalizar session
-    const URL_KILLSESSION = "http://glpi.mega.com.ar/apirest.php/killSession";
+    const URL_KILLSESSION = URL_GLPI + "/apirest.php/killSession";
     // URL para obtener tickets de grupo
-    const URL_GROUPTICKET = "http://glpi.mega.com.ar/apirest.php/Group_Ticket";
+    const URL_GROUPTICKET = URL_GLPI + "/apirest.php/Group_Ticket";
     // URL para ticket de usuarios
-    const URL_TICKETUSER = "http://glpi.mega.com.ar/apirest.php/Ticket_User";
+    const URL_TICKETUSER = URL_GLPI + "/apirest.php/Ticket_User";
     // URL para administrar soluciones de tickets
-    const URL_ITILSOLUTION = "http://glpi.mega.com.ar/apirest.php/ITILSolution"
+    const URL_ITILSOLUTION = URL_GLPI + "/apirest.php/ITILSolution"
     // URL para administrar seguimiento de tickets
-    const URL_ITILFOLLOWUP = "http://glpi.mega.com.ar/apirest.php/ITILFollowup"
+    const URL_ITILFOLLOWUP = URL_GLPI + "/apirest.php/ITILFollowup"
     // URL para cambiar el perfil activo
-    const URL_CHANGEACTIVEPROFILE = "http://glpi.mega.com.ar/apirest.php/changeActiveProfile";
+    const URL_CHANGEACTIVEPROFILE = URL_GLPI + "/apirest.php/changeActiveProfile";
     // URL para obtener las ubicaciones de la empresa
-    const URL_LOCATIONS = "http://glpi.mega.com.ar/apirest.php/location";
+    const URL_LOCATIONS = URL_GLPI + "/apirest.php/location";
     // URL para obtener información de los usuarios en GLPI
-    const URL_USERS = "http://glpi.mega.com.ar/apirest.php/User";
+    const URL_USERS = URL_GLPI + "/apirest.php/User";
     // URL para obtener máquinas
-    const URL_COMPUTER = "http://glpi.mega.com.ar/apirest.php/Computer";
+    const URL_COMPUTER = URL_GLPI + "/apirest.php/Computer";
     // URL para cargar items dentro de los tickets
-    const URL_ITEM_TICKET = "HTTP://glpi.mega.com.ar/apirest.php/Item_Ticket";
+    const URL_ITEM_TICKET = URL_GLPI + "/apirest.php/Item_Ticket";
 
     // ID de estado de Inventario
     const INVENTORY_OK_STATUS = 1;

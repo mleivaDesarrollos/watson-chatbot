@@ -35,7 +35,7 @@ var certificate = fs.readFileSync('./cert_megatech.pem');
 var credentials = {key: privateKey, cert: certificate};
 const server = http.createServer(app);
 const servers = https.createServer(credentials,app);
-const PORT_STANDARD = 2030;
+const PORT_STANDARD = 80;
 const PORT_SECURE = 443;
 
 
