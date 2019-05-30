@@ -545,12 +545,12 @@
 
             }, 2000);
 
-            $(".chat-input").focusin(function() {
+            $(".chat-input").keypress(function() {
                 intervalPestaneoFocus.image[0] = intervalPestaneoFocus.focus[0];
                 intervalPestaneoFocus.image[1] = intervalPestaneoFocus.focus[0];
             });
 
-            $(".chat-input").focusout(function() {
+            $(".chat-input").keyup(function() {
                 intervalPestaneoFocus.image[0] = "img/1.png";
                 intervalPestaneoFocus.image[1] = "img/2.png";
             });
@@ -562,6 +562,7 @@
         var chat_logs = document.querySelector(".chat-logs");
         var text = currentMessage.querySelector(".cm-msg-text");
         var messageLink = linkDetect(message);
+        // Aplicamos reacciones a mego
         reactions("gratitude", message);
         reactions("notRecognized", message);
         reactions("insult", message);
@@ -575,6 +576,7 @@
         var currentMessage = chat_msg_usuario.cloneNode(true);
         var chat_logs = document.querySelector(".chat-logs");
         var text = currentMessage.querySelector(".cm-msg-text");
+        // Aplicamos reacciones a mego capturando mensajes del usuario
         reactions("gratitude", message);
         currentMessage.id = "cm-msg-" + indice;
         text.innerHTML = message;
@@ -591,6 +593,9 @@
 
         question.innerHTML = message.text;
         description.innerHTML = message.description;
+        if (message.description == undefined) {
+            description.innerHTML = "<br>"
+        }
         message.options.forEach(option => {
             var msg_li = document.createElement('li');
             msg_li.innerHTML = option.description;
