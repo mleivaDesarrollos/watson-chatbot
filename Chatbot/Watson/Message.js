@@ -22,14 +22,26 @@ const MESSAGE_SHOW_WORKSTATION = {
     description: "Listado de equipos asignados"
 }
 
+// Plantilla de mensaje predefinida para mostrar las ubicaciones
+const MESSAGE_SHOW_LOCATIONS = {
+    type: "option",
+    text: "¿Cual de estás ubicaciones sería donde estarías necesitando el servicio?",
+    description: "Listado de ubicaciones"
+}
+
+// Cuando hay que se hacer carga de otra dirección que no sea las listadas
+const OTHER_LOCATION = { description: "Otra dirección fuera del listado", value: "OTHER_LOCATION"};
+
 const OTHER_WORKSTATION = { description: "Otro equipo fuera del listado", value: "OTHER_WS" };
 
 const GET_TICKET_CONTEXT_DATA = "require_ticket";
 const GET_WORKSTATION_NUMBER = "require_workstation";
+const GET_REQUEST_ALL_USER_LOCATIONS = "require_user_locations";
 const GET_TICKET_PLACEHOLDER = "TICKET_NUMBER";
 
 const CONTEXT_CONVERSATION_ID = "conversation_id";
 const CONTEXT_SYSTEM = "system";
+const CONTEXT_REQUEST = "is_request";
 
 var filter_message_by_type = function ({ message } = {}) {
     // Preparamos el mensaje de respuesta
@@ -82,6 +94,10 @@ var CheckTicketRequestAndGenerateTicketNumber = async ({ caller_context, filtere
         var title;
         // Disponemos una variable para el código de categoría
         var category;
+        // Disponemos una variable que este disponible en caso de solicitud
+        var request;
+        // Variable que se usará en caso de que venga un ID de terminal en contexto
+        var terminal_id;
         // Iteramos sobre los elementos del contexto
         for (var property in caller_context) {
             // Validamos si la propiedad son las bases
@@ -93,10 +109,20 @@ var CheckTicketRequestAndGenerateTicketNumber = async ({ caller_context, filtere
                 // Guardamos el tipo de problema como si fuera el título del ticket
                 title = caller_context[property];
             }
+            // Validamos si el contexto presente corresponde al ID de terminal
+            else if (property.toLowerCase().includes("terminal_id")){
+                terminal_id = caller_context[property];                
+            }
             // Validamos si en la iteración actual viene el id de Categoria
             else if (property.toLowerCase().includes("categoria")) {
                 // Guardamos el contexto en la variable
                 category = caller_context[property];
+            } else if (property.toLowerCase().includes(CONTEXT_REQUEST)) {                
+                // Si la propiedad viene con valor true
+                if(caller_context[property] == true){
+                    // En este caso necesitamos que el ticket se cargue como solicitud
+                    request = true;
+                }
             } else {
                 // Preparamos la descripción del tipo de dato a agregar al ticket
                 var label = property.replace(/_/g, " ");
@@ -113,7 +139,7 @@ var CheckTicketRequestAndGenerateTicketNumber = async ({ caller_context, filtere
             // Generamos un nuevo ticket usando GLPI
             var GLPIClass = require('../../Ticket/GLPI');
             // Instanciamos un nuevo objeto GLPI
-            var GLPI = new GLPIClass({user_auth: authorization, tkt_title: title, tkt_description: description, tkt_category: category});
+            var GLPI = new GLPIClass({user_auth: authorization, tkt_title: title, tkt_description: description, tkt_category: category, is_req: request, workstation_id: terminal_id});
             // Solicitamos la generación de tickets
             await GLPI.CreateTicketAndRetrieveIDAndGroups().then(ticket_result => {
                 // Guardamos las variables recibidas
@@ -185,19 +211,23 @@ var CheckTicketRequestAndGenerateTicketNumber = async ({ caller_context, filtere
     };
 }
 
-var CheckWorkstationRequirementAndRetrieveMessageWithWorkstationList = async ({ caller_context, username, filtered_messages }) => {
+var CheckWorkstationRequirementAndRetrieveMessageWithWorkstationList = async ({ caller_context, authorization, filtered_messages }) => {
     var require_workstation = caller_context.hasOwnProperty(GET_WORKSTATION_NUMBER);
     // Si dentro de las variables de contexto llega la información de que se necesita el equipo, agregamos un mensaje adicional al listado de mensajes
     if (require_workstation) {
         // Definimos un array de elementos que contendrá los equipos consultados
         var arrWorkstations = [];
-        // Cargamos la libreria de CMDB
-        var CMDB = require('../../CMDB/CMDB');
-        // Obtenemos los equipos almacenados
-        var arrWorkstations;
         var arrOptions = [];
-        // Almacenamos los equipos en el array
-        await CMDB.GetByUser({ username: username }).then((workstation) => arrWorkstations = workstation);
+        // // Cargamos la libreria de CMDB
+        // var CMDB = require('../../CMDB/CMDB');        
+        // // Almacenamos los equipos en el array
+        // await CMDB.GetByUser({ username: username }).then((workstation) => arrWorkstations = workstation);
+        // Cargamos la librería de GLPI
+        let GLPIClass = require('../../Ticket/GLPI');
+        // Instanciamos un nuevo objeto GLPI
+        let GLPI = new GLPIClass({user_auth: authorization});
+        // Traemos los equipos relacionados a este usuario
+        await GLPI.GetUsersWorkstation().then(ws => arrWorkstations = ws);
         // Duplicamos la instancia de solicitud de mensaje para workstation
         var message_with_workstations = MESSAGE_SHOW_WORKSTATION;
         // Definimos que el mensaje viaja con propiedad workstation_select en true
@@ -206,8 +236,8 @@ var CheckWorkstationRequirementAndRetrieveMessageWithWorkstationList = async ({ 
         arrWorkstations.forEach(workstation => {
             // Agregamos la opcion
             var option = {
-                description: workstation,
-                value: workstation
+                description: workstation.name,
+                value: workstation.id
             }
             // Anexamos la opción al array de opciones
             arrOptions.push(option);
@@ -223,28 +253,49 @@ var CheckWorkstationRequirementAndRetrieveMessageWithWorkstationList = async ({ 
     return filtered_messages;
 }
 
-var CheckUserSendingWorkstationAndGetLocation = async ({ caller_context, username, workstation_name }) => {
-    if (caller_context.sending_workstation) {
-        // Guardamos la variable de contexto en el objeto para que viaje a watson                    
-        caller_context.Numero_de_terminal = workstation_name;
-        // Validamos si el usuario indico que va a poner otra máquina
-        if (workstation_name != OTHER_WORKSTATION.value) {
-            // Levantamos la libreria al CMDB
-            var CMDB = require('../../CMDB/CMDB');
-            // Disponemos un acumulador de direccion
-            var location;
-            // Ejecutamos la consulta al CMDB con los datos provistos
-            await CMDB.GetWorkstationLocation({ username: username, workstation: workstation_name }).then((locationFinded) => {
-                location = locationFinded;
-            });
-            // Guardamos la dirección dentro del contexto
-            caller_context.Direccion_donde_esta_el_equipo = location;
-            // Eliminamos la propiedad del contexto
-            delete caller_context.sending_workstation;
-        }
+var retrieveUserLocationListOnContextRequest = async({ caller_context, authorization, filtered_messages }) => {
+    // Verificamos si existe la propiedad que se dispone para pedir todas las ubicaciones
+    let require_user_locations = caller_context.hasOwnProperty(GET_REQUEST_ALL_USER_LOCATIONS);
+    // Validamos si está definido esta variable, para proceder a contactar a la herramienta de tickets para pedir ubicaciones
+    if(require_user_locations) {
+        // Eliminamos la propiedad para que en proximas solicitudes no vuelva a ingresar
+        delete caller_context[GET_REQUEST_ALL_USER_LOCATIONS];
+        // Disponemos de la variable de ubicaciones
+        let user_locs = [];
+        // Generamos una nueva instancia de clase GLPI requiriendo la libreria
+        let GLPIClass = require('../../Ticket/GLPI');
+        // Generamos una nueva instancia de clase para hacer uso de los metodos del módulo
+        let GLPI = new GLPIClass({user_auth: authorization});
+        // Disponemos el array donde guardaremos las opciones procesadas
+        let options_for_message = [];
+        // Generamos la solicitud esperando a que finalice
+        await GLPI.GetAllUsersLocations().then(locs => {
+            user_locs = locs;
+        });
+        // Hacemos una copia del template de mensaje de tipo opcion con ubicaciones
+        let message_with_locations = MESSAGE_SHOW_LOCATIONS;
+        // Iteramos sobre las ubicaciones que nos devolvió GLPI
+        user_locs.forEach(location => {
+            // Generamos una nueva opción
+            let option = {
+                description: location,
+                value: location
+            };
+            // Agregamos las opciones al listado
+            options_for_message.push(option);
+        });
+        // Para dejar al usuario la posibilidad de cargue una ubicación fuera del listado
+        options_for_message.push(OTHER_LOCATION);
+        // Agregamos las opciones
+        message_with_locations.options = options_for_message;
+        // Agregamos el mensaje al listado de mensajes filtrados
+        filtered_messages.push(message_with_locations);
     }
-    // Devolvemos el contexto procesado
-    return caller_context;
+    // Devolvemos todos los mensajes filtrados
+    return {
+        context: caller_context,
+        messages: filtered_messages
+    }
 }
 
 var CheckUserSendingAddressAndSaveOnContext = function ({ caller_context, address_to_send }) {
@@ -315,9 +366,7 @@ module.exports = function ({ param_workspace, param_version, param_headers, para
             // Validamos si el mensaje viene vacio
             if (userInput != '' && userInput != undefined) {
                 // Validamos si la solicitud viaja con la terminal
-                if (context != undefined) {                    
-                    // Validamos si el usuario esta enviando su numero de terminal
-                    await CheckUserSendingWorkstationAndGetLocation({ caller_context: context, username: this._username, workstation_name: userInput }).then((returning_context) => context = returning_context);                    
+                if (context != undefined) {                                        
                     // Validamos si el usuario está enviando las direcciones
                     context = CheckUserSendingAddressAndSaveOnContext({ caller_context: context, address_to_send: userInput });
                 }
@@ -358,7 +407,9 @@ module.exports = function ({ param_workspace, param_version, param_headers, para
                     // Validamos si dentro del contexto llega una solicitud de ticket
                     processed_response = await CheckTicketRequestAndGenerateTicketNumber({ caller_context: context, username: this._username, fullname: this._fullname, filtered_messages: arrMessages, authorization: this._auth });
                     // Validamos si dentro del contexto llega una solicitud
-                    arrMessages = await CheckWorkstationRequirementAndRetrieveMessageWithWorkstationList({ caller_context: context, username: this._username, filtered_messages: arrMessages });
+                    processed_response = await CheckWorkstationRequirementAndRetrieveMessageWithWorkstationList({ caller_context: context, authorization: this._auth, filtered_messages: arrMessages });
+                    // Validamos si dentro del contexto llega una solicitud pidiendo todas las ubicaciones del usuario
+                    processed_response = await retrieveUserLocationListOnContextRequest({ caller_context: context, authorization: this._auth, filtered_messages: arrMessages});
                     // Validamos si la solicitud tiene un requerimiento de reinicio
                     context = CheckAndRestartChat({caller_context: context});
                     // Resolvemos la promise                
