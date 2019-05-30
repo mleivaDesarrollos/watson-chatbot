@@ -30,13 +30,13 @@ var configAD = {
 };
 
 // Configuración de certificados
-var privateKey  = fs.readFileSync('./cert_megatech.key');
-var certificate = fs.readFileSync('./cert_megatech.pem');
+var privateKey  = fs.readFileSync('./portal.key');
+var certificate = fs.readFileSync('./portal.pem');
 var credentials = {key: privateKey, cert: certificate};
 const server = http.createServer(app);
 const servers = https.createServer(credentials,app);
 const PORT_STANDARD = 80;
-const PORT_SECURE = 443;
+const PORT_SECURE = 8043;
 
 
 // Hacemos que express considere las librerias middleware bodyparser y multer para su funcionamiento
