@@ -11,9 +11,9 @@
     const AWAITING_RESPONSE_MESSAGES = ["¿Seguís ahí?", "Te espero "];
     const FINISHING_CHAT_INACTIVITY_MESSAGES = ["Avisame cualquier cosa, yo siempre estoy aqui para cualquier consulta que tengas.", "Cuando tengas tiempo seguimos hablando!"];
     // Todos los tiempos se encuentran en valor milisegundos
-    const INTERVAL_AWAIT_RESPONSE = 60000; //60000
-    const INTERVAL_FINISH_ACTIVITY = 120000; //120000 
-    const INTERVAL_POST_FINISH_DELAY = 120000; //120000
+    const INTERVAL_AWAIT_RESPONSE = 24000;
+    const INTERVAL_FINISH_ACTIVITY = 30000;
+    const INTERVAL_POST_FINISH_DELAY = 4000;
     // Variables que se utilizaran como recursos publicos
     var chat_msg_usuario;
     var chat_msg_bot;
@@ -187,7 +187,7 @@
 
             if (indice == 0) {
                 await_time_ms = 0;
-            }            
+            }
             // Obtenemos el primer mensaje en la cola de mensajes
             var message = pending_delivering_messages[0];
             // Removemos el elemento del arreglo
@@ -284,7 +284,7 @@
         } else {
             // En el caso de los mensajes tipo opción el valor y el mostrado viajan por caminos difernetes
             _msg_value = option_value;
-            _msg_display = option_display;            
+            _msg_display = option_display;
         }
         // Validamos si existe el contexto
         let inpContext = document.querySelector(CONTEXT_DATA);
@@ -303,9 +303,9 @@
                 JSONcontext.terminal_id = _msg_value;
                 JSONcontext.Nombre_de_equipo = _msg_display;
                 // Para que Watson reciba el nombre de máquina literal y no muestre un número, el display en este caso unico es lo mismo que el value
-                if(_msg_value != "OTHER_WS"){
+                if (_msg_value != "OTHER_WS") {
                     _msg_value = _msg_display;
-                }                
+                }
             }
             if (JSONcontext.require_address) {
                 // Configuramos la propiedad de envio de dirección
@@ -320,7 +320,7 @@
                 message: _msg_value,
                 context: contextValue
             }
-        // Preparamos la solicitud ajax para hacer el envío de información        
+            // Preparamos la solicitud ajax para hacer el envío de información        
         AjaxCall({
             url: CHATBOT_URL,
             method: CHATBOT_HTTPMETHOD,
@@ -537,6 +537,23 @@
             }
         }
 
+        // ------------------ Cierre por mensaje ----------------------
+
+        if (action == "close") {
+            var close = {
+                array: ["adios", "nos vemos", "hasta la próxima!"],
+                image: ["img/agradecimiento.png"]
+            };
+
+            for (let notRecIndex = 0; notRecIndex < close.array.length; notRecIndex++) {
+                if (originalString.toLowerCase().includes(close.array[notRecIndex])) {
+                    megoCaja.src = close.image;
+                    // var inputContexto = document.querySelector(CONTEXT_INPUT_NAME);
+                    // console.log(CONTEXT_INPUT_NAME);
+                }
+            }
+        }
+
         // --------------- Pestaneo y focus --------------------
         if (action == "intervalPestaneoFocus") {
             var intervalPestaneoFocus = {
@@ -559,8 +576,10 @@
             });
 
             $(".chat-input").keyup(function() {
-                intervalPestaneoFocus.image[0] = "img/1.png";
-                intervalPestaneoFocus.image[1] = "img/2.png";
+                setTimeout(function() {
+                    intervalPestaneoFocus.image[0] = "img/1.png";
+                    intervalPestaneoFocus.image[1] = "img/2.png";
+                }, 2000);
             });
         }
     }
@@ -571,6 +590,7 @@
         var text = currentMessage.querySelector(".cm-msg-text");
         var messageLink = linkDetect(message);
         // Aplicamos reacciones a mego
+        reactions("close", message);
         reactions("gratitude", message);
         reactions("notRecognized", message);
         reactions("insult", message);
