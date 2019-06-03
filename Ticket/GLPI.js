@@ -47,12 +47,12 @@
     // URL para obtener información de los usuarios en GLPI
     const URL_USERS = URL_GLPI + "/apirest.php/User";
     // URL para obtener máquinas
-    const URL_COMPUTER = URL_GLPI + "/apirest.php/Computer";
+    const URL_COMPUTER = URL_GLPI + "/apirest.php/search/Computer?is_deleted=0&criteria[0][field]=70&criteria[0][searchtype]=equals&criteria[0][value]=%user_id%&criteria[1][link]=AND&criteria[1][field]=31&criteria[1][searchtype]=contains&criteria[1][value]=En uso&withindexes=true";
     // URL para cargar items dentro de los tickets
     const URL_ITEM_TICKET = URL_GLPI + "/apirest.php/Item_Ticket";
 
     // ID de estado de Inventario
-    const INVENTORY_OK_STATUS = 1;
+    const COMPUTER_NAME_FIELD = 1;
 
 
 
@@ -558,7 +558,7 @@ function GetWorkstations({session_token, user_id} ={}){
         // Preparamos los headers de petición
         let headers = get_token_headers({s_token : session_token});
         // Disponemos del url de consulta para PC
-        let url = URL_COMPUTER + "?searchText[users_id]=" + user_id;
+        let url = URL_COMPUTER.replace("%user_id%", user_id);        
         // Ejecutamos el request
         request({ 
             url: url,
@@ -572,15 +572,14 @@ function GetWorkstations({session_token, user_id} ={}){
                 // Parseamos a modo JSON la respuesta
                 let computers_JSON = JSON.parse(body_response);
                 // Disponemos un acumulador para guardar las computadoras
-                let computers_result = [];
-                // Iteramos sobre todos los elementos del JSON recibido
-                computers_JSON.forEach(computer => {
-                    // La PC debe tener un estado valido para ser agregado al listado devuelto
-                    if(computer.states_id == INVENTORY_OK_STATUS) {                        
-                        // Agregamos el ID y descripción
-                        computers_result.push({id: computer.id, name: computer.name});
-                    }
-                });
+                let computers_result = [];                
+                if(computers_JSON.hasOwnProperty('data')) {
+                    // En la respuesta de la API, en el Key viaja el ID de la computadora
+                    Object.keys(computers_JSON.data).forEach(computer_id => {                        
+                        // Agregamos la PC al listado de equipos
+                        computers_result.push({id: computer_id, name: computers_JSON.data[computer_id][COMPUTER_NAME_FIELD]});
+                    });
+                } // end if
                 // Resolvemos con el array
                 resolve(computers_result);
             } else { 
