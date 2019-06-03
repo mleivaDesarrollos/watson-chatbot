@@ -93,6 +93,7 @@
             method: 'GET',
             callback: saveSecondStyle
         });
+
         // Ejecutamos eventos
         events();
     }
