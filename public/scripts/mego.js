@@ -145,6 +145,7 @@
             // Aplicamos estilos secundarios
             document.body.appendChild(secondStyle);
         } else if (destinationStyle == "primary") {
+            stop_inactivity_check();
             // Ocultamos el boton
             formButton.style.display = 'block';
             // Mostramos el input
@@ -215,7 +216,6 @@
     var RenderResponseMessage = function(responseFromServer) {
         // Obtenemos el objeto JSON CSSSecond lo parseamos
         var JsonResp = JSON.parse(responseFromServer);
-        var loader = document.querySelector("#loader");
         var isResetingChat = false;
         // Renderizamos la respuesta del bot
         // Iteramos sobre todos los mensajes recibidos
@@ -229,9 +229,9 @@
         // Luego del primer mensaje, dejamos el if habilitado para corroborar la existencia de finish_chat
         if (JsonResp.context != undefined) {
             if (JsonResp.context.finish_chat) {
-                inpContext = undefined;
-                loader.style.display = "none";
+                document.body.removeChild(inpContext);
                 isResetingChat = true;
+                stop_inactivity_check();
             };
         }
         // Iniciamos la distribución de mensajes acumulados
@@ -247,7 +247,12 @@
             document.body.appendChild(inpContext);
         }
 
-        if (inpContext != undefined) inpContext.value = JSON.stringify(JsonResp.context);
+        if (inpContext != undefined) {
+            if (JsonResp.context != undefined) {
+                inpContext.value = JSON.stringify(JsonResp.context);
+            }
+        }
+
         // Si no es el inicio de la conversación,
         if (is_conversation_starting == false) start_inactivity_check();
         //loader.classList.remove("active");
@@ -334,6 +339,7 @@
     }
 
     var close_chatbox = function() {
+        stop_inactivity_check();
         $("#chat-circle").toggle('scale');
         $(".chat-box").toggle('scale');
         $(".mego-img").toggle('scale');
@@ -354,11 +360,13 @@
         chatlog.innerHTML = "";
         // Eliminamos el contexto
         var inpContext = document.querySelector(CONTEXT_DATA);
-        if (inpContext != null) document.body.removeChild(inpContext);
-        // Cambiamos el estilo de Mego para interactuar como saludo inicial
-        changeStyle("primary");
+        if (inpContext != null) {
+            document.body.removeChild(inpContext);
+        }
         // Minimizamos el chat
         close_chatbox();
+        // Cambiamos el estilo de Mego para interactuar como saludo inicial
+        changeStyle("primary");
         // Reseteamos el contador de mensajes
         contadorN = 0;
         // Disponemos al chatbot para que vuelva a iniciar de conversación
@@ -537,23 +545,6 @@
             }
         }
 
-        // ------------------ Cierre por mensaje ----------------------
-
-        if (action == "close") {
-            var close = {
-                array: ["adios", "nos vemos", "hasta la próxima!"],
-                image: ["img/agradecimiento.png"]
-            };
-
-            for (let notRecIndex = 0; notRecIndex < close.array.length; notRecIndex++) {
-                if (originalString.toLowerCase().includes(close.array[notRecIndex])) {
-                    megoCaja.src = close.image;
-                    // var inputContexto = document.querySelector(CONTEXT_INPUT_NAME);
-                    // console.log(CONTEXT_INPUT_NAME);
-                }
-            }
-        }
-
         // --------------- Pestaneo y focus --------------------
         if (action == "intervalPestaneoFocus") {
             var intervalPestaneoFocus = {
@@ -589,8 +580,6 @@
         var chat_logs = document.querySelector(".chat-logs");
         var text = currentMessage.querySelector(".cm-msg-text");
         var messageLink = linkDetect(message);
-        // Aplicamos reacciones a mego
-        reactions("close", message);
         reactions("gratitude", message);
         reactions("notRecognized", message);
         reactions("insult", message);
