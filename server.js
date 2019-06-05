@@ -36,7 +36,7 @@ var credentials = { key: privateKey, cert: certificate };
 const server = http.createServer(app);
 const servers = https.createServer(credentials, app);
 const PORT_STANDARD = 80;
-const PORT_SECURE = 8043;
+const PORT_SECURE = 443;
 
 
 // Hacemos que express considere las librerias middleware bodyparser y multer para su funcionamiento
