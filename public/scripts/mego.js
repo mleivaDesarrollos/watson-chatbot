@@ -11,9 +11,15 @@
     const AWAITING_RESPONSE_MESSAGES = ["¿Seguís ahí?", "Te espero "];
     const FINISHING_CHAT_INACTIVITY_MESSAGES = ["Avisame cualquier cosa, yo siempre estoy aqui para cualquier consulta que tengas.", "Cuando tengas tiempo seguimos hablando!"];
     // Todos los tiempos se encuentran en valor milisegundos
-    const INTERVAL_AWAIT_RESPONSE = 24000;
-    const INTERVAL_FINISH_ACTIVITY = 30000;
-    const INTERVAL_POST_FINISH_DELAY = 4000;
+    const INTERVAL_AWAIT_RESPONSE = 999999;
+    const INTERVAL_FINISH_ACTIVITY = 999999;
+    const INTERVAL_POST_FINISH_DELAY = 999999;
+
+    // const INTERVAL_AWAIT_RESPONSE = 24000;
+    // const INTERVAL_FINISH_ACTIVITY = 30000;
+    // const INTERVAL_POST_FINISH_DELAY = 4000;
+
+
     // Variables que se utilizaran como recursos publicos
     var chat_msg_usuario;
     var chat_msg_bot;
@@ -164,6 +170,7 @@
             generate_message(SALUDO, "usuario");
             // Desactivamos loader 
             loader.classList.remove("active");
+            $("#chat-input").focus();
             // Iniciamos el control de inactividad
             start_inactivity_check();
             // Desactivamos el inicio de conversación
@@ -291,6 +298,9 @@
             // En el caso de los mensajes tipo opción el valor y el mostrado viajan por caminos difernetes
             _msg_value = option_value;
             _msg_display = option_display;
+        }
+        if (option_value == "otherOp") {
+            return generate_message("Indicame que otra consulta tenes", "bot");
         }
         // Validamos si existe el contexto
         let inpContext = document.querySelector(CONTEXT_DATA);
@@ -468,10 +478,14 @@
         }
 
         if (type == "option") {
-            $("#chat-submit").prop('disabled', false);
+            // Si el mensaje es de tipo opcion, sacamos el foco del input
+            $("#chat-input").blur();
+            $("#chat-submit").prop('disabled', true);
             generate_message_option(msg);
             loader.classList.remove("active");
         }
+        // Siempre hacemos focus sobre el input al recibir un mensaje
+        $("#chat-input").focus();
 
         $(".chat-logs").stop().animate({
             scrollTop: $(".chat-logs")[0].scrollHeight
@@ -546,6 +560,21 @@
             }
         }
 
+        // ------------------ Otra opcion ----------------------
+
+        // if (action == "otherOptions") {
+        //     var otherOptions = {
+        //         array: ["respeto", "malas palabras", "contestar insultos"],
+        //         image: ["img/insultos.png"]
+        //     };
+
+        //     for (let notRecIndex = 0; notRecIndex < otherOptions.array.length; notRecIndex++) {
+        //         if (originalString.toLowerCase().includes(otherOptions.array[notRecIndex])) {
+        //             $("#chat-input").focus();
+        //         }
+        //     }
+        // }
+
         // --------------- Pestaneo y focus --------------------
         if (action == "intervalPestaneoFocus") {
             var intervalPestaneoFocus = {
@@ -601,14 +630,27 @@
         chat_logs.appendChild(currentMessage);
     }
 
+    // Inserta un nodo despues de otro
+    function insertAfter(e, i) {
+        if (e.nextSibling) {
+            e.parentNode.insertBefore(i, e.nextSibling);
+        } else {
+            e.parentNode.appendChild(i);
+        }
+    }
+
     var generate_message_option = function(message) {
         var chat_logs = document.querySelector(".chat-logs");
         var currentMessage = chat_msg_option.cloneNode(true);
         var question = currentMessage.querySelector("#question");
         var description = currentMessage.querySelector("#description");
         var options = currentMessage.querySelector("#ulTag");
-        var chat_msg = currentMessage.querySelector(".cm-msg-text-option");
+        var optionDisabled = document.createElement("li");
 
+        var other_option = { description: "Tengo otra consulta", value: "otherOp" }
+        message.options.push(other_option);
+
+        // Si el mensaje es de tipo opcion, sacamos foco del input
         question.innerHTML = message.text;
         description.innerHTML = message.description;
         if (message.description == undefined) {
@@ -616,6 +658,7 @@
         }
         message.options.forEach(option => {
             var msg_li = document.createElement('li');
+            msg_li.id = "opcion";
             msg_li.innerHTML = option.description;
             msg_li.displayText = option.description;
             msg_li.valueText = option.value;
