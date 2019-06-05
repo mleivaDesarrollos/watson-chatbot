@@ -30,11 +30,11 @@ var configAD = {
 };
 
 // Configuración de certificados
-var privateKey  = fs.readFileSync('./portal.key');
+var privateKey = fs.readFileSync('./portal.key');
 var certificate = fs.readFileSync('./portal.pem');
-var credentials = {key: privateKey, cert: certificate};
+var credentials = { key: privateKey, cert: certificate };
 const server = http.createServer(app);
-const servers = https.createServer(credentials,app);
+const servers = https.createServer(credentials, app);
 const PORT_STANDARD = 80;
 const PORT_SECURE = 8043;
 
@@ -85,7 +85,8 @@ app.get('/logout', (req, res, next) => {
 app.use('/login', express.static('./public/login'));
 
 app.use(function(req, res, next) {
-    if (req.session.isLogged) {
+    console.log(req.path);
+    if (req.session.isLogged || req.path.includes("/presentacion/")) {
         next();
     } else {
         res.sendFile(path.join(__dirname + '/public/login/login.html'));
@@ -93,6 +94,7 @@ app.use(function(req, res, next) {
 });
 
 app.use('/', express.static('./public'));
+
 
 app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
@@ -119,7 +121,7 @@ app.post('/send', (req, res) => {
             res.json(messageFromBot);
         });
     })
-// Lanzamos la escucha sobre el puerto indicado
+    // Lanzamos la escucha sobre el puerto indicado
 
 server.listen(PORT_STANDARD);
 servers.listen(PORT_SECURE);

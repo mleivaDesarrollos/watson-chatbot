@@ -93,6 +93,7 @@
             method: 'GET',
             callback: saveSecondStyle
         });
+
         // Ejecutamos eventos
         events();
     }
@@ -611,7 +612,7 @@
         question.innerHTML = message.text;
         description.innerHTML = message.description;
         if (message.description == undefined) {
-            description.innerHTML = "<br>"
+            description.innerHTML = "<br>";
         }
         message.options.forEach(option => {
             var msg_li = document.createElement('li');
