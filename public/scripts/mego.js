@@ -11,13 +11,10 @@
     const AWAITING_RESPONSE_MESSAGES = ["¿Seguís ahí?", "Te espero "];
     const FINISHING_CHAT_INACTIVITY_MESSAGES = ["Avisame cualquier cosa, yo siempre estoy aqui para cualquier consulta que tengas.", "Cuando tengas tiempo seguimos hablando!"];
     // Todos los tiempos se encuentran en valor milisegundos
-    const INTERVAL_AWAIT_RESPONSE = 999999;
-    const INTERVAL_FINISH_ACTIVITY = 999999;
-    const INTERVAL_POST_FINISH_DELAY = 999999;
 
-    // const INTERVAL_AWAIT_RESPONSE = 24000;
-    // const INTERVAL_FINISH_ACTIVITY = 30000;
-    // const INTERVAL_POST_FINISH_DELAY = 4000;
+    const INTERVAL_AWAIT_RESPONSE = 48000;
+    const INTERVAL_FINISH_ACTIVITY = 60000;
+    const INTERVAL_POST_FINISH_DELAY = 4000;
 
 
     // Variables que se utilizaran como recursos publicos
@@ -455,6 +452,8 @@
     var generate_message = function(msg, type) {
         var conversation_starting = indice > 1;
         if (type == "bot") {
+            $("#chat-submit").prop('disabled', false);
+            $("#chat-input").prop('disabled', false);
             loader.classList.remove("active");
             generate_message_bot(msg);
             $("#chat-submit").prop('disabled', false);
@@ -481,6 +480,7 @@
             // Si el mensaje es de tipo opcion, sacamos el foco del input
             $("#chat-input").blur();
             $("#chat-submit").prop('disabled', true);
+            $("#chat-input").prop('disabled', true);
             generate_message_option(msg);
             loader.classList.remove("active");
         }
@@ -562,18 +562,18 @@
 
         // ------------------ Otra opcion ----------------------
 
-        // if (action == "otherOptions") {
-        //     var otherOptions = {
-        //         array: ["respeto", "malas palabras", "contestar insultos"],
-        //         image: ["img/insultos.png"]
-        //     };
+        if (action == "otherOption") {
+            var otherOptions = {
+                array: ["otra consulta"],
+                image: ["img/agradecimiento.png"]
+            };
 
-        //     for (let notRecIndex = 0; notRecIndex < otherOptions.array.length; notRecIndex++) {
-        //         if (originalString.toLowerCase().includes(otherOptions.array[notRecIndex])) {
-        //             $("#chat-input").focus();
-        //         }
-        //     }
-        // }
+            for (let notRecIndex = 0; notRecIndex < otherOptions.array.length; notRecIndex++) {
+                if (originalString.toLowerCase().includes(otherOptions.array[notRecIndex])) {
+                    $("#chat-input").focus();
+                }
+            }
+        }
 
         // --------------- Pestaneo y focus --------------------
         if (action == "intervalPestaneoFocus") {
@@ -610,6 +610,13 @@
         var chat_logs = document.querySelector(".chat-logs");
         var text = currentMessage.querySelector(".cm-msg-text");
         var messageLink = linkDetect(message);
+        var input = document.querySelector("#chat-input");
+        var submit = document.querySelector("#chat-submit");
+
+        // Cambiamos el estilo del text box cuando ingresa un mensaje de tipo bot
+        input.style.cursor = "default";
+        submit.style.color = "#c8591d";
+
         reactions("gratitude", message);
         reactions("notRecognized", message);
         reactions("insult", message);
@@ -623,8 +630,7 @@
         var currentMessage = chat_msg_usuario.cloneNode(true);
         var chat_logs = document.querySelector(".chat-logs");
         var text = currentMessage.querySelector(".cm-msg-text");
-        // Aplicamos reacciones a mego capturando mensajes del usuario
-        reactions("gratitude", message);
+
         currentMessage.id = "cm-msg-" + indice;
         text.innerHTML = message;
         chat_logs.appendChild(currentMessage);
@@ -645,7 +651,18 @@
         var question = currentMessage.querySelector("#question");
         var description = currentMessage.querySelector("#description");
         var options = currentMessage.querySelector("#ulTag");
-        var optionDisabled = document.createElement("li");
+        var input = document.querySelector("#chat-input");
+        var submit = document.querySelector("#chat-submit");
+
+        // Cambiamos el estilo del text box cuando ingresa un mensaje de tipo opcion
+        input.style.cursor = "no-drop";
+        submit.style.color = "lightgrey";
+
+
+        // Cargamos reacciones al presionar "Otra consulta"
+        reactions(message, "otherOption");
+
+        // Modificamos estilos
 
         var other_option = { description: "Tengo otra consulta", value: "otherOp" }
         message.options.push(other_option);

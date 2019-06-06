@@ -85,7 +85,7 @@ app.get('/logout', (req, res, next) => {
 app.use('/login', express.static('./public/login'));
 
 app.use(function(req, res, next) {
-    console.log(req.path);
+
     if (req.session.isLogged || req.path.includes("/presentacion/")) {
         next();
     } else {
