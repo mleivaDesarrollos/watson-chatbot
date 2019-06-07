@@ -37,7 +37,7 @@ const server = http.createServer(app);
 const servers = https.createServer(credentials, app);
 const PORT_STANDARD = 80;
 const PORT_SECURE = 443;
-
+const PUBLIC_URL = "portal.megatech.la";
 
 // Hacemos que express considere las librerias middleware bodyparser y multer para su funcionamiento
 app.use(bodyParser.json());
@@ -46,6 +46,18 @@ app.use(upload.array());
 // ... sumamos cookie y session para manejar el auth
 app.use(cookie());
 app.use(session({ secret: 'codigo secreto', resave: false, saveUninitialized: false }));
+
+// Redireccionamiento
+
+app.use(function(req, res, next) {
+    if (req.secure || !(req.headers.host.includes(PUBLIC_URL))) {
+        // request was via https, so do no special handling
+        next();
+    } else {
+        // request was via http, so redirect to https
+        res.redirect('https://' + req.headers.host + ':4065' + req.url);
+    }
+});
 
 // Logica de autenticación
 app.post('/authenticate', (req, res) => {
