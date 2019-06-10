@@ -43,7 +43,7 @@
     // URL para cambiar el perfil activo
     const URL_CHANGEACTIVEPROFILE = URL_GLPI + "/apirest.php/changeActiveProfile";
     // URL para obtener las ubicaciones de la empresa
-    const URL_LOCATIONS = URL_GLPI + "/apirest.php/location";
+    const URL_LOCATIONS = URL_GLPI + "/apirest.php/Location";
     // URL para obtener información de los usuarios en GLPI
     const URL_USERS = URL_GLPI + "/apirest.php/User";
     // URL para obtener máquinas
@@ -942,12 +942,18 @@ module.exports = function({user_auth, tkt_title, tkt_description, tkt_category, 
     }
 
     // Devuelve una promesa con todas las ubicaciones del usuario
-    this._getAllUserLocations = function() {
+    this._getAllUserLocations = function() {        
         return ConnectGLPIUserAndGetSessionToken({base_64_authorization: this._user_auth})
         .then(token_id => {
-            // Llamamos a solicitud todas las ubicaciones a las cuales el usuario tenga alcance
-            return GetLocations({session_token: token_id});
-        }).catch(error => console.log(error));
+            this._token_id = token_id;
+            // Cambiamos a perfil empleado
+            return ChangeActiveProfileToEmployee({session_token: this._token_id});
+        })
+        .then(success => { 
+            // Obtenemos las ubicaciones del usuario
+            return GetLocations({session_token: this._token_id});
+        })
+        .catch(error => console.log(error));
     }
 
     // Devuelve una promesa con todas las máquinas del usuario
