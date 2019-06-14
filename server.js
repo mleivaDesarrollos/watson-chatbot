@@ -8,13 +8,11 @@ var path = require('path');
 var fs = require('fs');
 var http = require('http');
 var https = require('https');
+var uploads = require('./upload');
 
 // Cargamos libreria para parsear formularios por post
 var bodyParser = require('body-parser');
 // Cargamos la libreria para poder subir archivos
-var multer = require('multer');
-// instanciamos la libreria
-var upload = multer();
 
 /*  LIBRERIAS AUTHENTICATION  */
 var ad = require('activedirectory');
@@ -43,7 +41,7 @@ const PUBLIC_URL = "portal.megatech.la";
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(upload.array());
-// ... sumamos cookie y session para manejar el auth
+
 app.use(cookie());
 app.use(session({ secret: 'codigo secreto', resave: false, saveUninitialized: false }));
 
@@ -132,8 +130,13 @@ app.post('/send', (req, res) => {
         chatbot.message({ userInput: message, context: context, firstname: firstName, fullname: fullName, username: username, auth: auth }).then((messageFromBot) => {
             res.json(messageFromBot);
         });
-    })
-    // Lanzamos la escucha sobre el puerto indicado
+})
 
+// Control de rutas para subidas de archivos
+app.post('/upload_documents', (req, res) => {
+
+})
+
+// Lanzamos la escucha sobre el puerto indicado
 server.listen(PORT_STANDARD);
 servers.listen(PORT_SECURE);
