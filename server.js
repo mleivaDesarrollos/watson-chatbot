@@ -3,12 +3,11 @@
 var express = require('express');
 // Instanciamos express en una variable
 var app = express();
-// El Path
-var path = require('path');
+
 var fs = require('fs');
 var http = require('http');
 var https = require('https');
-var uploads = require('./upload');
+var path = require('path');
 
 // Cargamos libreria para parsear formularios por post
 var bodyParser = require('body-parser');
@@ -27,6 +26,10 @@ var configAD = {
     password: 'C4rr13r!'
 };
 
+// Librería de Logeo privado
+let log = require('./Log');
+let LOG_SERVER_PREFIX = "MainServer - ";
+
 // Configuración de certificados
 var privateKey = fs.readFileSync('./portal.key');
 var certificate = fs.readFileSync('./portal.pem');
@@ -40,7 +43,6 @@ const PUBLIC_URL = "portal.megatech.la";
 // Hacemos que express considere las librerias middleware bodyparser y multer para su funcionamiento
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(upload.array());
 
 app.use(cookie());
 app.use(session({ secret: 'codigo secreto', resave: false, saveUninitialized: false }));
@@ -134,7 +136,15 @@ app.post('/send', (req, res) => {
 
 // Control de rutas para subidas de archivos
 app.post('/upload_documents', (req, res) => {
-
+    var uploads = require('./upload.js')();
+    
+    // Utilizando la libreria Upload, gestionamos la solicitud de subida de archivos
+    uploads.upload_multiple_and_return_filenames({request: req, response: res}).then(
+        file_names => {                        
+            res.json({filenames:file_names, message: "Subida de archivos correcta"});
+        }).catch(e => {
+            res.status(400).json({filenames:[], message: e.message});
+        })
 })
 
 // Lanzamos la escucha sobre el puerto indicado

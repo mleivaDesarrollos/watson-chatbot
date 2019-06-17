@@ -1,6 +1,8 @@
+var multer = require('multer');
+var log = require('./Log');
+var fs = require('fs');
+
 module.exports = function(){        
-    var multer = require('multer');
-    var log = require('./Log');
     // Subida de archivos
     const MAX_UPLOAD_SIZE = 10485760;
     const MAX_UPLOAD_FILES = 5;
@@ -37,7 +39,7 @@ module.exports = function(){
         destination: function(req, file, callback) {
             callback(null, UPLOAD_PATH);
         },
-        filename: function(req, file, callback) {          
+        filename: function(req, file, callback) {            
             let extension = file.originalname.match(/\.[^\.*]*$/gmi);
             if(extension == null) {
                 // A los archivos sin extension se le pondrá por defecto como txt
@@ -54,7 +56,7 @@ module.exports = function(){
                 return cb(null, true);
             }
         }
-        cb(new Error("Tipo de formato de archivo no soportado"));
+        cb(new Error("El tipo de archivo de " + file.originalname + " no está soportado."));
     }
 
     // Se chequea si el total de tamaño de archivos en conjunto no supera el máximo establecido
@@ -77,15 +79,13 @@ module.exports = function(){
                     }
                 });
             });
+
             return false;
         }
         return true;
     }
 
-    this.upload_multiple_and_return_filenames = function({request, response} ={}) {
-        // Preparamos una promesa para devolver
-        let ACTION_LOG = "Multiple Upload - ";
-        let ERROR_LOG = BASE_ERROR_LOG_PREFIX + ACTION_LOG;
+    this.upload_multiple_and_return_filenames = function({request, response} = {}) {
         let promise = new Promise((resolve, reject) => {
             try{
                 // Configuramos las opciones de subida de archivo del API
@@ -94,25 +94,30 @@ module.exports = function(){
                 upload_config.array(UPLOAD_MULTIPLE_FIELD)(request, response, function(err){
                     // En caso de error se filtra
                     if(err){
-                        log.Register(ERROR_LOG + err);
-                        return reject(err);
+                        let error = err;
+                        switch(err.message){
+                            case "Too many files":
+                                error = new Error("Se ha superado el máximo de " + MAX_UPLOAD_FILES + " archivos por incidencia.");
+                                break;
+                            case "File too large":
+                                error = new Error("Uno de los archivos que intento subir supero el máximo de " + MAX_UPLOAD_SIZE / 1024 / 1024 + "MB.")
+                                break;
+                        }
+                        return reject(error);
                     }
                     if(is_total_size_correct(request.files) == true){                        
                         // Preparamos la variable para devolver el listado de nombres
                         let file_names = [];
                         // Iteramos sobre los nombres de archivos cargados
                         request.files.forEach(file => 
-                            {
-                                file_names.push(file.filename);
+                            {                                
+                                file_names.push({originalname: file.originalname , temporaryname: file.filename});
                             })
                         // Resolvemos la promesa con el listado de nombre de archivos
                         resolve(file_names);
                     } else { 
-                        reject("Tamaño de archivos en conjunto superado.");
-                    }
-                })
+                        reject(new Error('El conjunto de archivos enviado supera el maximo de ' + MAX_UPLOAD_SIZE / 1024 / 1024 + 'MB.'));                    }                })
             } catch (e) {
-                log.Register(BASE_LOG_PREFIX + "Multiple Upload - " + e);
                 reject(e);
             }
         });
@@ -120,5 +125,32 @@ module.exports = function(){
         return promise;
     }
 
+    this.get_file_buffers_for_request_send = function({file_to_read} = {}){
+        // Disponemos de constantes de logueo
+        let ACTION_LOG = "GetFileBuffersForRequestSend - ";
+        let ERROR_LOG = BASE_ERROR_LOG_PREFIX + ACTION_LOG;
+        // Validamos que los datos de archivo hayan sido comunicados
+        if(file_to_read == undefined) return log.Register(ERROR_LOG + "Faltaron los archivos a leer en la patición.");
+        // Validamos si el nombre de archivo temporal esta cargado
+        if(file_to_read.temporaryname == undefined) return log.Register(ERROR_LOG + "El campo nombre temporal no fue informado debidamente.")
+        try {         
+            // Preparamos el path del archivo
+            let path = UPLOAD_PATH + '/' + file_to_read.temporaryname;
+            // Realizamos la lectura de archivo y guardamos en un buffer temporal
+            let buffer = fs.createReadStream(path);
+            // Almacenamos el buffer en el objeto a devolver
+            file_to_read.buffer = buffer;
+            // Como el archivo ya no se necesita, se procede a eliminar del directorio temporal
+            fs.unlink(path, function(err) {
+                if(err) log.Register(ACTION_LOG + "No se pudo eliminar archivo " + file_to_read.temporaryname + " de la ruta " + UPLOAD_PATH + ". Detalle: " + err );
+            });
+            // Devolvemos el file con el buffer agregado
+            return file_to_read;
+            
+        } catch(e){ 
+            return log.Register(ERROR_LOG + e.message);
+        }
 
+    }
+    return this;
 }
