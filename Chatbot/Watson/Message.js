@@ -4,9 +4,9 @@ var log = require('../../Log');
 
 // Definimos constanets
 const predefined_welcome_message = [
-    "Bienvenido, mi nombre es Mego, ¿En qué te ayudo $u?",
-    "Hola, soy Mego y estoy para ayudarte. ¿Que estás necesitando $u?",
-    "Hola $u, soy Mego ¿Te puedo ayudar en algo?"
+    "Bienvenido, mi nombre es ARI, ¿En qué te ayudo $u?",
+    "Hola, soy ARI y estoy para ayudarte. ¿Que estás necesitando $u?",
+    "Hola $u, soy ARI ¿Te puedo ayudar en algo?"
 ];
 
 const predefined_ticket_message = [
@@ -36,8 +36,15 @@ const OTHER_WORKSTATION = { description: "Otro equipo fuera del listado", value:
 
 const GET_TICKET_CONTEXT_DATA = "require_ticket";
 const GET_WORKSTATION_NUMBER = "require_workstation";
+const REQUIRE_UPLOAD_FILES = "require_attachment";
+const CLEAN_TEMPORARY_FILES = "clean_temporary_files";
 const GET_REQUEST_ALL_USER_LOCATIONS = "require_user_locations";
 const GET_TICKET_PLACEHOLDER = "TICKET_NUMBER";
+
+const CONTEXT_VAR_FILENAMES = "file_names";
+const CONTEXT_VAR_PROBLEM_TYPE = "tipo_de_problema";
+const CONTEXT_VAR_TERMINAL_ID = "terminal_id";
+const CONTEXT_VAR_CATEGORY = "categoria"
 
 const CONTEXT_CONVERSATION_ID = "conversation_id";
 const CONTEXT_SYSTEM = "system";
@@ -87,7 +94,7 @@ var CheckTicketRequestAndGenerateTicketNumber = async ({ caller_context, filtere
     if (require_ticket) {        
         // var MSC = require("../../Ticket/MSC");
         // Eliminamos la propiedad de requerimiento de ticket para no generar duplicados
-        delete caller_context["require_ticket"];
+        delete caller_context[GET_TICKET_CONTEXT_DATA];
         // Levantamos una variable que almacene el contenido del mensaje que será enviado al cliente
         var description = predefined_ticket_message[Math.floor(Math.random() * predefined_ticket_message.length)];
         // Disponemos una variable para el título
@@ -98,23 +105,29 @@ var CheckTicketRequestAndGenerateTicketNumber = async ({ caller_context, filtere
         var request;
         // Variable que se usará en caso de que venga un ID de terminal en contexto
         var terminal_id;
+        // En caso de que se tengan que subir archivos, se dispone una variable para realizar la subida
+        var upload_files;
         // Iteramos sobre los elementos del contexto
         for (var property in caller_context) {
             // Validamos si la propiedad son las bases
-            if (property == CONTEXT_CONVERSATION_ID || property == CONTEXT_SYSTEM || property == "require_ticket") {
+            if (property == CONTEXT_CONVERSATION_ID || property == CONTEXT_SYSTEM || property == GET_TICKET_CONTEXT_DATA) {
                 continue;
             }
             // Validamos si el tipo de problema viene cargado
-            if (property.toLowerCase().includes("tipo_de_problema")){
+            if (property.toLowerCase().includes(CONTEXT_VAR_PROBLEM_TYPE)){
                 // Guardamos el tipo de problema como si fuera el título del ticket
                 title = caller_context[property];
             }
+            else if (property.toLocaleLowerCase().includes(CONTEXT_VAR_FILENAMES)){
+                // Si hay que subir archivos, se guarda en una variable
+                upload_files = caller_context[property];
+            }
             // Validamos si el contexto presente corresponde al ID de terminal
-            else if (property.toLowerCase().includes("terminal_id")){
+            else if (property.toLowerCase().includes(CONTEXT_VAR_TERMINAL_ID)){
                 terminal_id = caller_context[property];                
             }
             // Validamos si en la iteración actual viene el id de Categoria
-            else if (property.toLowerCase().includes("categoria")) {
+            else if (property.toLowerCase().includes(CONTEXT_VAR_CATEGORY)) {
                 // Guardamos el contexto en la variable
                 category = caller_context[property];
             } else if (property.toLowerCase().includes(CONTEXT_REQUEST)) {                
@@ -131,6 +144,8 @@ var CheckTicketRequestAndGenerateTicketNumber = async ({ caller_context, filtere
                 // Almacenamos la información dentro del ticket
                 description += "-" + label + " : " + information + "\n";
             }
+            // Eliminamos la propiedad procesada del contexto
+            delete caller_context[property];
         }
         // Dejamos un acumulador de numero de tickets
         var ticket = {} ;
@@ -139,7 +154,7 @@ var CheckTicketRequestAndGenerateTicketNumber = async ({ caller_context, filtere
             // Generamos un nuevo ticket usando GLPI
             var GLPIClass = require('../../Ticket/GLPI');
             // Instanciamos un nuevo objeto GLPI
-            var GLPI = new GLPIClass({user_auth: authorization, tkt_title: title, tkt_description: description, tkt_category: category, is_req: request, workstation_id: terminal_id});
+            var GLPI = new GLPIClass({user_auth: authorization, tkt_title: title, tkt_description: description, tkt_category: category, is_req: request, workstation_id: terminal_id, files_to_upload: upload_files });
             // Solicitamos la generación de tickets
             await GLPI.CreateTicketAndRetrieveIDAndGroups().then(ticket_result => {
                 // Guardamos las variables recibidas
@@ -154,12 +169,6 @@ var CheckTicketRequestAndGenerateTicketNumber = async ({ caller_context, filtere
             // Logueamos en sistema
             log.Register("Error - WatsonMessage - En el contexto está faltando la descripción, la categoria o el titulo.");
         }   
-        // // Generamos un nuevo ticket y aguardamos el resultado
-        // await MSC.Get({ message_details: cliente_details }).then((ticketNumber) => 
-        // { ticket_number = ticketNumber })
-        // .catch((error) => {
-        //     ticket_number = "ERROR"
-        // });
         // Iteramos sobre los mensajes filtrados
         for(let i = 0; i < filtered_messages.length; i++){
             // Iteramos hasta encontrar el mensaje con el placeholder del ticket
@@ -209,6 +218,50 @@ var CheckTicketRequestAndGenerateTicketNumber = async ({ caller_context, filtere
         messages: filtered_messages,
         context: caller_context
     };
+}
+
+// Validamos si en la petición llega un requerimiento de subida de archivos
+var CheckUploadFileRequest = function({caller_context, filtered_messages} ={}) {
+    // Averiguamos si dentro del contexto viene la variable de subida de archivos
+    let require_attachment = caller_context.hasOwnProperty(REQUIRE_UPLOAD_FILES);
+
+    if(require_attachment) {
+        // Removemos esta variable del contexto
+        delete caller_context[REQUIRE_UPLOAD_FILES];
+        // Generamos un nuevo mensaje de tipo file
+        let message = {
+            text: "",
+            type: "file"
+        };
+        // Generamos un nuevo array de mensajes con contenido unico este mensaje de tipo file
+        filtered_messages = [message];        
+    }
+    return {
+        messages: filtered_messages,
+        context: caller_context
+    }
+}
+
+/*
+    Función que limpia los archivos subidos temporalmente al servidor llegado
+    el caso de que la nube de Watson lo solicite
+*/
+var CleanTemporaryUploadedFiles = function({caller_context} = {}) {
+    // Validamos si existe la variable de contexto que requiera limpieza de contexto
+    var clean_temporarys = caller_context.hasOwnProperty(CLEAN_TEMPORARY_FILES);
+    // Validamos ademas si hay nombres de archivos cargados
+    var file_names = caller_context.hasOwnProperty(CONTEXT_VAR_FILENAMES);
+    if(clean_temporarys && file_names) {
+        // Cargamos la librería uploads
+        let upload = require('../../upload')();
+        // Solicitamos al servicio que elimine los archivos
+        upload.remove_temporary_files({files_to_remove: caller_context[CONTEXT_VAR_FILENAMES]});
+        // Eliminamos las variables de contexto del objeto
+        delete caller_context[CONTEXT_VAR_FILENAMES];   
+        //delete caller_context[CLEAN_TEMPORARY_FILES];
+    }
+    // Devolvemos el contexto procesado
+    return caller_context;
 }
 
 var CheckWorkstationRequirementAndRetrieveMessageWithWorkstationList = async ({ caller_context, authorization, filtered_messages }) => {
@@ -388,10 +441,10 @@ module.exports = function ({ param_workspace, param_version, param_headers, para
                     var arrMessages = [];
                     // Levantamos todos los mensajes recibidos de respuesta
                     var messages = watsonResponse.output.generic;
-                    var context = watsonResponse.context;
+                    var context = watsonResponse.context;                    
                     // Iteramos sobre todos los mensajes
                     messages.forEach(_message => {
-                        try {
+                        try {                            
                             // Filtramos el mensaje
                             var filtered_message = filter_message_by_type({ message: _message });
                             // Agregamos el mensaje filtrado
@@ -410,8 +463,12 @@ module.exports = function ({ param_workspace, param_version, param_headers, para
                     processed_response = await CheckWorkstationRequirementAndRetrieveMessageWithWorkstationList({ caller_context: context, authorization: this._auth, filtered_messages: arrMessages });
                     // Validamos si dentro del contexto llega una solicitud pidiendo todas las ubicaciones del usuario
                     processed_response = await retrieveUserLocationListOnContextRequest({ caller_context: context, authorization: this._auth, filtered_messages: arrMessages});
+                    // Validamos si en la solicitud viene un pedido de subida de archivos
+                    processed_response = CheckUploadFileRequest({caller_context: context, filtered_messages: arrMessages});
+                    // Validamos si en la solicitud viene una solicitud de limpieza de archivos temporales
+                    processed_response.context = CleanTemporaryUploadedFiles({caller_context: processed_response.context});
                     // Validamos si la solicitud tiene un requerimiento de reinicio
-                    context = CheckAndRestartChat({caller_context: context});
+                    processed_response.context = CheckAndRestartChat({caller_context: context});
                     // Resolvemos la promise                
                     resolve(processed_response);
                 });
